@@ -1,0 +1,1160 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e1115" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="KI-Lernplan">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<title>KI-Lernplan</title>
+<script>
+// Manifest nur übers Netz (file:// meldet sonst einen CORS-Fehler); .app = als App vom Home-Bildschirm gestartet.
+if (/^https?:$/.test(location.protocol)) { var mf = document.createElement('link'); mf.rel = 'manifest'; mf.href = 'manifest.webmanifest'; document.head.appendChild(mf); }
+if ((window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true) document.documentElement.classList.add('app');
+</script>
+<style>
+:root{
+  color-scheme:light dark;
+  --bg:#f5f6f8;--surface:#fff;--surface-2:#eef0f3;--text:#1b1f24;--muted:#5a6270;--border:#dadee4;--track:#e3e6eb;
+  --accent:#0f766e;--accent-strong:#0a5a54;--accent-soft:#e2f3f0;--on-accent:#fff;--danger:#b42318;--on-danger:#fff;
+  --radius:12px;--shadow:0 1px 2px rgb(16 24 40 / .06);
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"Cascadia Mono",Menlo,Consolas,monospace;
+  --unten:0px;   /* Platz für die Tab-Leiste der App */
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0e1115;--surface:#161a20;--surface-2:#1d222a;--text:#e5e8ec;--muted:#9ba3af;--border:#2a3039;--track:#2a3039;
+  --accent:#2dd4bf;--accent-strong:#5eead4;--accent-soft:#10302c;--on-accent:#04211d;--danger:#f97066;--on-danger:#0e1115;--shadow:none;
+}}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:400 1rem/1.55 var(--font)}
+h1,h2,h3{line-height:1.25;margin:0}
+p{margin:0}
+a{color:var(--accent);text-underline-offset:.15em}
+a:hover{color:var(--accent-strong)}
+code{font-family:var(--mono);font-size:.88em;background:var(--surface-2);padding:.05em .35em;border-radius:5px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.muted{color:var(--muted)}
+.klein{font-size:.85rem}
+[hidden]{display:none!important}
+.wrap{max-width:1180px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-right)) 0 max(16px,env(safe-area-inset-left))}
+main section[id]{scroll-margin-top:12px}
+.skip{position:absolute;left:8px;top:-80px;z-index:20;background:var(--surface);color:var(--text);padding:.5rem .8rem;border-radius:8px;border:1px solid var(--border)}
+.skip:focus{top:8px}
+
+/* Kopfzeile */
+.top{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;padding-top:20px;padding-bottom:12px}
+.top h1{font-size:1.5rem;letter-spacing:-.01em}
+.top nav{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.top nav a{padding:.4rem .6rem;border-radius:8px;color:var(--muted);text-decoration:none;font-size:.95rem}
+.top nav a:hover{color:var(--text);background:var(--surface-2)}
+.banner{margin:0 0 12px;padding:12px 14px;border:1px solid var(--danger);border-radius:10px;background:var(--surface)}
+.banner p+p{margin-top:.3rem}
+.banner.info{border-color:var(--accent);display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+#offline{align-self:center}
+
+/* Buttons & Formulare */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4em;min-height:2.5rem;padding:.45rem .9rem;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit;font-size:.95rem;line-height:1.2;cursor:pointer;text-decoration:none}
+.btn:hover{border-color:var(--muted)}
+.btn.primaer{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.btn.primaer:hover{background:var(--accent-strong);border-color:var(--accent-strong)}
+.btn.gefahr{background:var(--danger);border-color:var(--danger);color:var(--on-danger);font-weight:600}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+a,button,summary,label{-webkit-tap-highlight-color:transparent}
+.btn:not(:disabled):active{background:var(--surface-2)}
+.btn.primaer:not(:disabled):active{background:var(--accent-strong)}
+input[type=search],input[type=date],select,textarea{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.45rem .65rem;min-height:2.5rem;max-width:100%}
+textarea{width:100%;min-height:3.4rem;resize:vertical;font-size:.95rem;line-height:1.45}
+input[type=checkbox]{accent-color:var(--accent);width:1.15rem;height:1.15rem;margin:0;flex:none}
+.reihe{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+progress{-webkit-appearance:none;appearance:none;display:block;width:100%;height:.5rem;border:0;border-radius:999px;background:var(--track);color:var(--accent);overflow:hidden}
+progress::-webkit-progress-bar{background:var(--track);border-radius:999px}
+progress::-webkit-progress-value{background:var(--accent);border-radius:999px}
+progress::-moz-progress-bar{background:var(--accent);border-radius:999px}
+
+/* Kacheln */
+.kacheln{display:grid;gap:12px;grid-template-columns:minmax(0,1fr);grid-template-areas:"next" "fort" "streak" "plan";margin:4px 0 24px}
+@media (min-width:640px){.kacheln{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"next next" "fort streak" "plan plan"}}
+@media (min-width:1000px){.kacheln{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-areas:"next next fort streak" "next next plan plan"}}
+#k-next{grid-area:next}#k-fort{grid-area:fort}#k-streak{grid-area:streak}#k-plan{grid-area:plan}
+.kachel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);min-width:0;display:flex;flex-direction:column;gap:.5rem}
+#k-next{border-top:3px solid var(--accent)}
+.k-label{font-size:.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.gross{font-size:2rem;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.gross small{font-size:1rem;font-weight:500;color:var(--muted)}
+.next-meta{display:flex;flex-wrap:wrap;gap:.3rem .5rem;align-items:center;color:var(--muted);font-size:.9rem}
+.next-titel{font-size:1.3rem}
+.next-ziel{color:var(--muted)}
+#k-next .reihe{margin-top:auto;padding-top:.4rem}
+.tage{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:3px;max-width:280px}
+.tage span{aspect-ratio:1;border-radius:3px;background:var(--track)}
+.tage span.an{background:var(--accent)}
+.tage span.heute{outline:1.5px solid var(--text);outline-offset:1px}
+.sollist{position:relative;height:.6rem;background:var(--track);border-radius:999px;margin:.3rem 0}
+.sollist .ist{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:999px}
+.sollist .soll{position:absolute;top:-5px;bottom:-5px;width:2px;margin-left:-1px;background:var(--text);border-radius:1px}
+
+/* Spalten */
+.spalten{display:grid;gap:24px;grid-template-columns:minmax(0,1fr);padding-bottom:40px}
+@media (min-width:1000px){.spalten{grid-template-columns:minmax(0,1fr) minmax(300px,380px);align-items:start}}
+.sec-kopf{display:flex;flex-wrap:wrap;gap:.4rem 1rem;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+.sec-kopf h2{font-size:1.2rem}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:24px;min-width:0}
+
+/* Filter */
+.filter{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.filter input[type=search]{flex:1 1 12rem;min-width:0}
+.seg{display:inline-flex;gap:2px;margin:0;padding:3px;border:1px solid var(--border);border-radius:10px;background:var(--surface);min-width:0}
+.seg label{position:relative;display:block}
+.seg input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.seg span{display:block;padding:.4rem .85rem;border-radius:7px;font-size:.92rem;color:var(--muted)}
+.seg input:checked+span{background:var(--accent);color:var(--on-accent);font-weight:600}
+.seg input:focus-visible+span{outline:3px solid var(--accent);outline-offset:2px}
+.leer{padding:16px;border:1px dashed var(--border);border-radius:10px;color:var(--muted)}
+
+/* Phasen */
+.phase{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;box-shadow:var(--shadow)}
+.phase>summary{list-style:none;cursor:pointer;padding:14px 16px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 10px;align-items:center;border-radius:var(--radius)}
+.phase>summary::-webkit-details-marker{display:none}
+.phase>summary::before{content:"";width:.5rem;height:.5rem;margin:0 .3rem;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .15s}
+.phase[open]>summary::before{transform:rotate(45deg)}
+.ph-kopf{display:flex;flex-wrap:wrap;gap:.2rem .6rem;align-items:baseline}
+.ph-nr{font-size:.8rem;font-weight:600;color:var(--muted)}
+.ph-titel{font-weight:600;font-size:1.05rem}
+.ph-wochen{font-size:.85rem;color:var(--muted)}
+.ph-dran{font-size:.72rem;font-weight:600;padding:.05rem .5rem;border-radius:999px;background:var(--accent-soft);color:var(--accent-strong)}
+.ph-fort{grid-column:2;display:flex;align-items:center;gap:.75rem}
+.ph-fort progress{flex:1;min-width:3rem}
+.ph-zahl{font-size:.85rem;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.phase.komplett .ph-titel::after{content:" \2713";color:var(--accent)}
+.ph-inhalt{padding:0 16px 16px}
+.ph-ziel{color:var(--muted);margin-bottom:12px}
+.modul-liste{display:grid;gap:10px}
+
+/* Modulkarte */
+.modul{border:1px solid var(--border);border-left:4px solid var(--border);border-radius:10px;padding:14px;background:var(--surface);scroll-margin-top:16px;min-width:0}
+.modul[data-status=erledigt]{border-left-color:var(--accent)}
+.modul[data-status=begonnen]{border-left-color:var(--accent);border-left-style:dashed}
+.m-kopf{display:flex;flex-wrap:wrap;align-items:baseline;gap:.3rem .6rem}
+.m-id{font:600 .82rem var(--mono);color:var(--muted)}
+.m-titel{font-size:1.05rem;flex:1 1 12rem;min-width:0}
+.m-titel:focus,#h-plan:focus,.k-label:focus{outline:none}
+.m-titel:focus-visible,#h-plan:focus-visible,.k-label:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.badge{font-size:.75rem;font-weight:600;padding:.08rem .55rem;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.badge.erledigt{background:var(--accent-soft);color:var(--accent-strong)}
+.badge.begonnen{background:transparent;color:var(--accent-strong);box-shadow:inset 0 0 0 1px var(--accent)}
+.m-std{font-size:.85rem;color:var(--muted);white-space:nowrap}
+.m-ziel{margin-top:.35rem}
+.m-block{margin-top:.75rem}
+.m-label{display:block;font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:.25rem}
+.quellen,.m-news{margin:0;padding-left:1.1rem}
+.quellen li,.m-news li{margin:.15rem 0;overflow-wrap:anywhere}
+a[target=_blank]::after{content:"\00a0\2197";content:"\00a0\2197"/"";font-size:.85em}
+.m-log{margin-top:.6rem;font-size:.85rem;color:var(--muted)}
+.m-fuss{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:center;justify-content:space-between;margin-top:.85rem;padding-top:.75rem;border-top:1px solid var(--border)}
+.check{display:inline-flex;align-items:center;gap:.5rem;cursor:pointer;min-height:2.5rem}
+.check:has(input:disabled){cursor:default}
+.cb-hinweis{font-size:.82rem;color:var(--muted)}
+
+/* News & Journal */
+.liste{list-style:none;margin:0;padding:0}
+.liste>li{padding:12px 0;border-top:1px solid var(--border)}
+.liste>li:first-child{border-top:0;padding-top:0}
+.meta{display:flex;flex-wrap:wrap;gap:.15rem .5rem;align-items:center;font-size:.8rem;color:var(--muted)}
+.chip{font-size:.72rem;font-weight:600;padding:.03rem .5rem;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.chip.akzent{background:var(--accent-soft);color:var(--accent-strong)}
+.news-titel{display:inline-block;margin-top:.2rem;font-weight:600;overflow-wrap:anywhere}
+.news-kurz{margin-top:.15rem;font-size:.92rem}
+.j-text{margin-top:.2rem;font-size:.92rem;overflow-wrap:anywhere}
+.panel-fuss{margin-top:12px;font-size:.82rem;color:var(--muted)}
+
+/* Dialoge */
+dialog{border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);padding:0;width:min(540px,calc(100% - 32px));max-height:calc(100% - 32px);box-shadow:0 24px 60px rgb(0 0 0 / .3)}
+dialog::backdrop{background:rgb(10 12 16 / .5)}
+.dlg-kopf{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 12px 12px 20px;border-bottom:1px solid var(--border)}
+.dlg-kopf h2{font-size:1.15rem}
+.dlg-inhalt{padding:0 20px 16px}
+.dlg-inhalt section{padding:16px 0;border-bottom:1px solid var(--border);display:grid;gap:.5rem}
+.dlg-inhalt section:last-of-type{border-bottom:0}
+.dlg-inhalt h3{font-size:1rem}
+.dlg-status{min-height:1.4em;font-size:.9rem;color:var(--accent-strong);font-weight:600}
+#frage form{padding:20px;display:grid;gap:12px}
+#frage h2{font-size:1.15rem}
+.ende{justify-content:flex-end}
+
+/* Toast */
+.toast{position:fixed;left:50%;bottom:calc(16px + var(--unten) + env(safe-area-inset-bottom));z-index:30;width:max-content;max-width:calc(100% - 32px);padding:.65rem 1rem;border-radius:10px;background:var(--text);color:var(--bg);font-size:.95rem;box-shadow:0 8px 24px rgb(0 0 0 / .2);transform:translate(-50%,160%);opacity:0;transition:transform .2s,opacity .2s;pointer-events:none}
+.toast.zeigen{transform:translate(-50%,0);opacity:1}
+body.hat-update .toast{bottom:calc(84px + var(--unten) + env(safe-area-inset-bottom))}
+body.hat-update{padding-bottom:calc(76px + var(--unten) + env(safe-area-inset-bottom))}
+.fuss{padding:0 16px calc(32px + env(safe-area-inset-bottom));text-align:center;font-size:.82rem;color:var(--muted)}
+
+/* Hinweis auf neue Inhalte */
+.update{position:fixed;left:50%;bottom:calc(16px + var(--unten) + env(safe-area-inset-bottom));z-index:29;transform:translateX(-50%);display:flex;align-items:center;gap:12px;width:max-content;max-width:calc(100% - 32px);padding:8px 8px 8px 16px;border-radius:12px;background:var(--text);color:var(--bg);font-size:.95rem;box-shadow:0 8px 24px rgb(0 0 0 / .2)}
+.update .btn{min-height:2.5rem}
+
+/* Tab-Leiste – nur in der App (Home-Bildschirm) auf schmalen Displays */
+.tabbar{display:none}
+@media (max-width:999px){
+  html.app{--unten:58px}
+  html.app body{padding-bottom:calc(var(--unten) + env(safe-area-inset-bottom))}
+  html.app .top nav a{display:none}
+  html.app .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:25;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);background:var(--surface);background:color-mix(in srgb,var(--surface) 92%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-top:1px solid var(--border)}
+}
+.tabbar a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:58px;color:var(--muted);text-decoration:none;font-size:.7rem;font-weight:600}
+.tabbar a[aria-current=true]{color:var(--accent)}
+.tabbar a:active{color:var(--text)}
+.tabbar a:focus-visible{outline-offset:-3px;border-radius:10px}
+.tabbar svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* Touch: größere Ziele, 16px in Eingabefeldern (sonst zoomt iOS beim Tippen) */
+@media (pointer:coarse){
+  .btn{min-height:2.75rem}
+  textarea{font-size:1rem}
+  .top nav a{padding:.6rem .7rem}
+  .seg span{padding:.55rem .85rem}
+}
+
+/* Windows-Kontrastdesigns: Auswahl und Balken sichtbar halten */
+@media (forced-colors:active){
+  .seg input:checked+span{forced-color-adjust:none;background:Highlight;color:HighlightText}
+  .tage span{border:1px solid CanvasText}
+  .tage span.an,.sollist .ist{forced-color-adjust:none;background:Highlight}
+  .sollist{border:1px solid CanvasText}
+  .sollist .soll{forced-color-adjust:none;background:CanvasText}
+  progress{forced-color-adjust:none;border:1px solid CanvasText;background:Canvas}
+  progress::-webkit-progress-bar{background:Canvas}
+  progress::-webkit-progress-value{background:Highlight}
+  progress::-moz-progress-bar{background:Highlight}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important}}
+@media (max-width:420px){.top h1{font-size:1.3rem}.gross{font-size:1.7rem}.seg span{padding-left:.65rem;padding-right:.65rem}.kachel,.panel{padding:14px}.ph-inhalt{padding:0 10px 12px}.phase>summary{padding:12px}}
+</style>
+</head>
+<body>
+<a class="skip" href="#plan">Zum Lernplan springen</a>
+<header class="top wrap">
+  <div class="reihe">
+    <h1 id="titel">KI-Lernplan</h1>
+    <span id="offline" class="chip" title="Zeigt den zuletzt geladenen Stand" hidden>offline</span>
+  </div>
+  <nav aria-label="Bereiche">
+    <a href="#plan">Plan</a>
+    <a href="#news">News</a>
+    <a href="#journal">Journal</a>
+    <button type="button" class="btn" id="btn-einst">Einstellungen</button>
+  </nav>
+</header>
+
+<div class="wrap" id="banner-box"></div>
+<noscript><div class="wrap"><p class="banner">Dieses Dashboard braucht JavaScript.</p></div></noscript>
+
+<main class="wrap">
+  <section class="kacheln" id="ueberblick" aria-label="Überblick">
+    <article class="kachel" id="k-next"></article>
+    <article class="kachel" id="k-fort"></article>
+    <article class="kachel" id="k-streak"></article>
+    <article class="kachel" id="k-plan"></article>
+  </section>
+
+  <div class="spalten">
+    <section id="plan" aria-labelledby="h-plan">
+      <div class="sec-kopf">
+        <h2 id="h-plan" tabindex="-1">Lernplan</h2>
+        <span id="treffer" class="muted klein" aria-live="polite"></span>
+      </div>
+      <div class="filter">
+        <fieldset class="seg">
+          <legend class="sr-only">Module filtern</legend>
+          <label><input type="radio" name="statusfilter" value="alle" checked><span>Alle</span></label>
+          <label><input type="radio" name="statusfilter" value="offen"><span>Offen</span></label>
+          <label><input type="radio" name="statusfilter" value="erledigt"><span>Erledigt</span></label>
+        </fieldset>
+        <input type="search" id="suche" placeholder="Module durchsuchen …" aria-label="Module durchsuchen" autocomplete="off">
+      </div>
+      <div id="phasen"></div>
+      <div id="plan-leer" class="leer" hidden>
+        <p>Keine Module für diesen Filter.</p>
+        <p style="margin-top:.6rem"><button type="button" class="btn" id="filter-reset">Filter zurücksetzen</button></p>
+      </div>
+    </section>
+
+    <aside>
+      <section id="news" class="panel" aria-labelledby="h-news">
+        <div class="sec-kopf">
+          <h2 id="h-news">KI-News</h2>
+          <select id="news-tag" aria-label="News nach Thema filtern"><option value="">Alle Themen</option></select>
+        </div>
+        <ol id="news-liste" class="liste"></ol>
+        <p id="news-leer" class="leer" hidden>Noch keine News. Führe in Claude Code <code>/ki-news</code> aus und lade diese Seite danach neu.</p>
+        <p id="news-zahl" class="panel-fuss"></p>
+      </section>
+
+      <section id="journal" class="panel" aria-labelledby="h-journal">
+        <div class="sec-kopf">
+          <h2 id="h-journal">Lernjournal</h2>
+          <span id="j-zahl" class="muted klein"></span>
+        </div>
+        <ol id="j-liste" class="liste"></ol>
+        <p id="j-leer" class="leer" hidden>Noch keine Einträge. Hake ein Modul ab oder starte eine Session, z. B. <code>/lern-session 1.1</code>.</p>
+        <p class="panel-fuss"><button type="button" class="btn" id="j-mehr" hidden></button></p>
+        <p class="panel-fuss">Neue Einträge aus <code>/lern-session</code> erscheinen nach dem Neuladen.</p>
+      </section>
+    </aside>
+  </div>
+</main>
+<p class="fuss">Daten: <code>data/plan.js</code> · <code>data/log.js</code> · <code>data/news.js</code> – Häkchen, Notizen und Startdatum bleiben auf diesem Gerät.</p>
+
+<nav class="tabbar" aria-label="App-Navigation">
+  <a href="#ueberblick"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>Überblick</a>
+  <a href="#plan"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 6H20M10.5 12H20M10.5 18H20M3.5 6l1.6 1.6L8 4.7M3.5 12l1.6 1.6L8 10.7"/><circle cx="5.5" cy="18" r="1.4"/></svg>Plan</a>
+  <a href="#news"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="13.5" height="15" rx="2"/><path d="M17 8.5h3.5v8.5a2.5 2.5 0 0 1-5 0M7 9h6.5M7 12.5h6.5M7 16h4"/></svg>News</a>
+  <a href="#journal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18V6.5a2 2 0 0 1 2-2h12v13H7a2 2 0 0 0-2 2 2 2 0 0 0 2 2h12"/><path d="M9.5 8.5h5.5"/></svg>Journal</a>
+</nav>
+
+<div id="update" class="update" hidden>
+  <span>Neue Inhalte verfügbar</span>
+  <button type="button" class="btn primaer" id="update-btn">Neu laden</button>
+</div>
+
+<dialog id="einst" aria-labelledby="einst-titel">
+  <form method="dialog" class="dlg-kopf">
+    <h2 id="einst-titel">Einstellungen</h2>
+    <button class="btn ghost" value="zu" aria-label="Einstellungen schließen">✕</button>
+  </form>
+  <div class="dlg-inhalt">
+    <section>
+      <h3>Startdatum</h3>
+      <label for="start" id="start-label" class="muted klein">Beginn deines Lernplans – daraus entstehen „Woche X“ und die Soll-Stunden.</label>
+      <div class="reihe">
+        <input type="date" id="start" min="2000-01-01" max="2099-12-31">
+        <button type="button" class="btn" id="start-heute">Heute</button>
+        <button type="button" class="btn ghost" id="start-weg">Entfernen</button>
+      </div>
+    </section>
+    <section>
+      <h3>Sicherung &amp; Abgleich</h3>
+      <p class="muted klein">Häkchen, Notizen und Startdatum liegen nur auf diesem Gerät. Zum Abgleich zwischen PC und iPhone: hier exportieren, auf dem anderen Gerät importieren und „Zusammenführen“ wählen. Lernjournal und News stehen in <code>data/*.js</code>.</p>
+      <div class="reihe">
+        <button type="button" class="btn" id="export">Als JSON exportieren</button>
+        <button type="button" class="btn" id="import-btn">JSON importieren …</button>
+        <input type="file" id="import" accept=".json,application/json" hidden>
+      </div>
+    </section>
+    <section>
+      <h3>Zurücksetzen</h3>
+      <p class="muted klein">Löscht alle Häkchen, Notizen und das Startdatum auf diesem Gerät. Die Dateien in <code>data/</code> bleiben unverändert.</p>
+      <div class="reihe"><button type="button" class="btn" id="reset">Alles zurücksetzen …</button></div>
+    </section>
+    <p id="einst-status" class="dlg-status" role="status" aria-live="polite"></p>
+  </div>
+</dialog>
+
+<dialog id="frage" aria-labelledby="frage-titel" aria-describedby="frage-text">
+  <form method="dialog">
+    <h2 id="frage-titel"></h2>
+    <p id="frage-text"></p>
+    <div class="reihe ende">
+      <button class="btn" value="nein" autofocus>Abbrechen</button>
+      <button class="btn" value="alt" id="frage-alt" hidden></button>
+      <button class="btn gefahr" value="ja" id="frage-ok">OK</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+window.KILP_LADEFEHLER = [];
+window.addEventListener('error', function (e) {
+  var t = e.target, s = document.currentScript, quelle = s && s.getAttribute('src');
+  if (t && t.tagName === 'SCRIPT') KILP_LADEFEHLER.push((t.getAttribute('src') || 'Skript') + ' wurde nicht gefunden.');
+  else if (e.message) KILP_LADEFEHLER.push((quelle || (e.filename ? e.filename.split('/').pop() : 'Skript')) + ': ' + e.message + (e.lineno ? ' (Zeile ' + e.lineno + ')' : ''));
+}, true);
+</script>
+<script src="data/plan.js"></script>
+<script src="data/log.js"></script>
+<script src="data/news.js"></script>
+<script>
+(() => {
+'use strict';
+const PLAN_WOCHEN = 12;      // Dauer des Lernplans in Wochen
+const NEWS_MAX = 10;         // so viele News zeigt die Liste
+const JOURNAL_MAX = 15;      // so viele Journal-Einträge vor „Alle anzeigen“
+const P = 'kilp:';           // localStorage-Präfix
+const TAG_REIHENFOLGE = ['Modelle', 'Claude', 'Agenten', 'Tools', 'Open Source', 'Forschung', 'Recht'];
+
+/* ---------- Hilfsfunktionen ---------- */
+const $ = (sel) => document.querySelector(sel);
+const txt = (v) => (v == null ? '' : String(v));
+function el(tag, attrs, ...kinder) {
+  const n = document.createElement(tag);
+  if (attrs) for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === 'class') n.className = v;
+    else if (k === 'text') n.textContent = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of kinder.flat(Infinity)) if (c != null && c !== false) n.append(c instanceof Node ? c : String(c));
+  return n;
+}
+const DATUM_RE = /^\d{4}-\d{2}-\d{2}$/;
+function istDatum(s) {
+  if (typeof s !== 'string' || !DATUM_RE.test(s)) return false;
+  const dt = zuDate(s);
+  return iso(dt) === s;
+}
+const zuDate = (s) => { const [y, m, d] = s.split('-').map(Number); const dt = new Date(2000, 0, 1); dt.setFullYear(y, m - 1, d); return dt; };
+const plausibel = (s) => istDatum(s) && s >= '2000-01-01' && s <= '2099-12-31';   // fürs Startdatum
+const iso = (dt) => dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+const heute = () => iso(new Date());
+const plusTage = (s, n) => { const dt = zuDate(s); dt.setDate(dt.getDate() + n); return iso(dt); };
+const tageZwischen = (a, b) => Math.round((zuDate(b) - zuDate(a)) / 864e5);
+function fmtDatum(s) {
+  if (!istDatum(s)) return txt(s) || 'ohne Datum';
+  const t = tageZwischen(s, heute());
+  if (t === 0) return 'heute';
+  if (t === 1) return 'gestern';
+  return fmtVoll(s);
+}
+const fmtVoll = (s) => zuDate(s).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+const anzahl = (n, eins, mehr) => n + ' ' + (n === 1 ? eins : mehr);
+const fmtZahl = (n) => (Number(n) || 0).toLocaleString('de-DE', { maximumFractionDigits: 1 });
+const cmpId = (a, b) => txt(a).localeCompare(txt(b), 'de', { numeric: true });
+const slug = (id) => txt(id).replace(/[^A-Za-z0-9_-]/g, '-');
+const sichereUrl = (u) => /^https?:\/\//i.test(txt(u));
+const summe = (liste) => liste.reduce((s, m) => s + m.std, 0);
+const bewegungReduziert = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- localStorage (jeder Zugriff in try/catch) ---------- */
+const store = {
+  ok: (() => { try { localStorage.setItem(P + '__test', '1'); localStorage.removeItem(P + '__test'); return true; } catch (e) { return false; } })(),
+  get(key, fallback) { try { const v = localStorage.getItem(P + key); return v == null ? fallback : JSON.parse(v); } catch (e) { return fallback; } },
+  set(key, wert) { try { localStorage.setItem(P + key, JSON.stringify(wert)); return true; } catch (e) { return false; } },
+  weg(key) { try { localStorage.removeItem(P + key); return true; } catch (e) { return false; } },
+  leeren() {
+    try {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(P)) keys.push(k); }
+      keys.forEach((k) => localStorage.removeItem(k));
+      return true;
+    } catch (e) { return false; }
+  },
+};
+const nurObjekt = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+function saubereHaken(v) { const r = {}; for (const [id, d] of Object.entries(nurObjekt(v))) if (istDatum(d)) r[id] = d; return r; }
+function saubereNotizen(v) { const r = {}; for (const [id, t] of Object.entries(nurObjekt(v))) if (typeof t === 'string' && t.trim()) r[id] = t; return r; }
+
+let haken = {}, notizen = {}, start = '';
+function ladeZustand() {
+  haken = saubereHaken(store.get('done', {}));
+  notizen = saubereNotizen(store.get('notes', {}));
+  const s = store.get('start', '');
+  start = plausibel(s) ? s : '';
+}
+function speichereStart() { return start ? store.set('start', start) : store.weg('start'); }
+
+/* ---------- Daten aus data/*.js ---------- */
+const planOk = !!(window.PLAN && typeof window.PLAN === 'object' && Array.isArray(window.PLAN.module));
+const planDaten = planOk ? window.PLAN : { titel: 'KI-Lernplan', phasen: [], module: [] };
+const log = (Array.isArray(window.LOG) ? window.LOG : []).filter((e) => e && typeof e === 'object');
+const news = (Array.isArray(window.NEWS) ? window.NEWS : []).filter((n) => n && typeof n === 'object');
+
+const phasenMap = new Map();
+for (const ph of Array.isArray(planDaten.phasen) ? planDaten.phasen : []) {
+  if (ph && ph.id != null && !phasenMap.has(txt(ph.id))) phasenMap.set(txt(ph.id), { ...ph, id: txt(ph.id) });
+}
+const phasen = [...phasenMap.values()].sort((a, b) => cmpId(a.id, b.id));
+const modulMap = new Map();   // bei doppelter ID gewinnt der spätere Eintrag
+for (const m of planDaten.module) {
+  if (m && m.id != null) modulMap.set(txt(m.id), { ...m, id: txt(m.id), p: txt(m.p), std: Math.max(0, Number(m.std) || 0) });
+}
+const gruppen = phasen.map((ph) => ({ ph, module: [...modulMap.values()].filter((m) => m.p === ph.id).sort((a, b) => cmpId(a.id, b.id)) }));
+const ohnePhase = [...modulMap.values()].filter((m) => !phasenMap.has(m.p)).sort((a, b) => cmpId(a.id, b.id));
+if (ohnePhase.length) gruppen.push({ ph: { id: '–', titel: 'Ohne Phase', wochen: '', ziel: 'Module, deren Phase (p) im Plan fehlt.' }, module: ohnePhase });
+const reihenfolge = gruppen.flatMap((g) => g.module);
+const gesamtStd = summe(reihenfolge);
+
+const logProModul = new Map();
+for (const e of log) { const id = txt(e.id); if (!id) continue; if (!logProModul.has(id)) logProModul.set(id, []); logProModul.get(id).push(e); }
+const fertigLautLog = new Set(log.filter((e) => e.fertig === true || e.fertig === 'true').map((e) => txt(e.id)));
+
+const newsSortiert = news.map((n, i) => ({ n, i, d: istDatum(n.d) ? n.d : '' }))
+  .sort((a, b) => (a.d < b.d ? 1 : a.d > b.d ? -1 : b.i - a.i)).map((x) => x.n);
+const newsProModul = new Map();
+for (const n of newsSortiert) { const id = txt(n.mod); if (!id) continue; if (!newsProModul.has(id)) newsProModul.set(id, []); newsProModul.get(id).push(n); }
+
+/* ---------- Status ---------- */
+function statusVon(id) {
+  if (haken[id] || fertigLautLog.has(id)) return 'erledigt';
+  if (logProModul.has(id)) return 'begonnen';
+  return 'offen';
+}
+const phaseVon = (m) => phasenMap.get(m.p) || null;
+function wochenSpanne(w) {
+  const t = /(\d+)(?:\s*[–—-]\s*(\d+))?\s*(\+)?/.exec(txt(w));
+  if (!t) return null;
+  const a = Number(t[1]);
+  return [a, t[3] ? Infinity : t[2] ? Number(t[2]) : a];
+}
+
+/* ---------- Meldungen ---------- */
+let toastTimer;
+function melde(text) {
+  const dlg = $('#einst');
+  if (dlg.open) { $('#einst-status').textContent = text; return; }
+  const t = $('#toast');
+  t.textContent = '';
+  requestAnimationFrame(() => { t.textContent = text; t.classList.add('zeigen'); });
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('zeigen'), 2800);
+}
+function banner(zeilen) {
+  $('#banner-box').append(el('div', { class: 'banner', role: 'alert' }, zeilen.map((z) => el('p', null, z))));
+}
+
+/* ---------- Zwischenablage ---------- */
+async function kopiere(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; }
+  } catch (e) { /* weiter zum Fallback */ }
+  const vorher = document.activeElement;
+  try {
+    const ta = el('textarea', { readonly: true, 'aria-hidden': 'true', style: 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0' });
+    ta.value = text;
+    document.body.append(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    if (vorher && vorher.focus) vorher.focus();
+    return ok;
+  } catch (e) {
+    if (vorher && vorher.focus) vorher.focus();
+    return false;
+  }
+}
+function sessionButton(id, primaer) {
+  const befehl = '/lern-session ' + id;
+  const lbl = el('span', { text: 'Session kopieren' });
+  const b = el('button', { type: 'button', class: primaer ? 'btn primaer' : 'btn', title: 'Kopiert „' + befehl + '“' },
+    lbl, el('span', { class: 'sr-only', text: ' für Modul ' + id }));
+  b.addEventListener('click', async () => {
+    if (await kopiere(befehl)) {
+      lbl.textContent = 'Kopiert ✓';
+      clearTimeout(b._t);
+      b._t = setTimeout(() => { lbl.textContent = 'Session kopieren'; }, 1600);
+      melde('Kopiert: ' + befehl + ' – in Claude Code einfügen');
+    } else {
+      window.prompt('Befehl zum Kopieren:', befehl);
+    }
+  });
+  return b;
+}
+
+/* ---------- Plan aufbauen (einmalig) ---------- */
+const karten = new Map();
+let filter = 'alle', suche = '';
+
+function modulLink(id, text) {
+  return modulMap.has(id)
+    ? el('a', { href: '#m-' + slug(id), 'data-modul': id }, text)
+    : el('span', { text });
+}
+
+function baueKarte(m, g) {
+  const id = m.id, sid = slug(id);
+  const titel = el('h3', { class: 'm-titel', id: 't-' + sid, tabindex: '-1', text: txt(m.titel) || 'Modul ' + id });
+  const badge = el('span', { class: 'badge' });
+  const cb = el('input', { type: 'checkbox', id: 'cb-' + sid });
+  const cbHinweis = el('span', { class: 'cb-hinweis' });
+  cb.addEventListener('change', () => {
+    if (cb.checked) haken[id] = heute(); else delete haken[id];
+    const ok = store.set('done', haken);
+    const hatteFokus = karte.contains(document.activeElement);
+    aktualisiere();
+    if (hatteFokus && karte.hidden) fokusNachAusblenden(id);
+    melde(!ok ? 'Speichern fehlgeschlagen – der Browser-Speicher ist nicht verfügbar.'
+      : cb.checked ? 'Modul ' + id + ' erledigt' : 'Haken bei Modul ' + id + ' entfernt');
+  });
+  const ta = el('textarea', { id: 'no-' + sid, rows: '2', placeholder: 'Gedanken, offene Fragen, Links …' });
+  ta.value = notizen[id] || '';
+  ta.addEventListener('input', () => {
+    if (ta.value.trim()) notizen[id] = ta.value; else delete notizen[id];
+    if (!store.set('notes', notizen) && !ta._warn) { ta._warn = true; melde('Notizen können nicht gespeichert werden.'); }
+  });
+
+  const quellen = (Array.isArray(m.quellen) ? m.quellen : []).map((q) => {
+    const [name, url] = Array.isArray(q) ? q : [q && q.name, q && q.url];
+    return el('li', null, sichereUrl(url)
+      ? el('a', { href: url, target: '_blank', rel: 'noopener noreferrer' }, txt(name) || txt(url), el('span', { class: 'sr-only', text: ' (neuer Tab)' }))
+      : el('span', { text: txt(name) || txt(url) }));
+  });
+  const passendeNews = (newsProModul.get(id) || []).map((n) => el('li', null,
+    sichereUrl(n.url)
+      ? el('a', { href: n.url, target: '_blank', rel: 'noopener noreferrer' }, txt(n.titel) || txt(n.url), el('span', { class: 'sr-only', text: ' (neuer Tab)' }))
+      : el('span', { text: txt(n.titel) }),
+    el('span', { class: 'muted klein', text: ' · ' + fmtDatum(n.d) })));
+  const eintraege = logProModul.get(id) || [];
+  const letzter = eintraege[eintraege.length - 1];
+
+  const karte = el('article', { class: 'modul', id: 'm-' + sid, 'aria-labelledby': 't-' + sid },
+    el('div', { class: 'm-kopf' }, el('span', { class: 'm-id', text: id }), titel, badge, el('span', { class: 'm-std', text: fmtZahl(m.std) + ' Std.' })),
+    m.ziel ? el('p', { class: 'm-ziel', text: txt(m.ziel) }) : null,
+    quellen.length ? el('div', { class: 'm-block' }, el('span', { class: 'm-label', text: 'Quellen' }), el('ul', { class: 'quellen' }, quellen)) : null,
+    m.aufgabe ? el('div', { class: 'm-block' }, el('span', { class: 'm-label', text: 'Praxisaufgabe' }), el('p', { text: txt(m.aufgabe) })) : null,
+    passendeNews.length ? el('div', { class: 'm-block' }, el('span', { class: 'm-label', text: 'Passende News' }), el('ul', { class: 'm-news' }, passendeNews)) : null,
+    letzter ? el('p', { class: 'm-log' }, 'Journal: ' + eintraege.length + (eintraege.length === 1 ? ' Eintrag' : ' Einträge') + ' · zuletzt ' + fmtDatum(letzter.d)
+      + (letzter.quiz ? ' · Quiz ' + txt(letzter.quiz) : '')) : null,
+    el('div', { class: 'm-block' }, el('label', { class: 'm-label', for: 'no-' + sid }, 'Notizen', el('span', { class: 'sr-only', text: ' zu Modul ' + id })), ta),
+    el('div', { class: 'm-fuss' },
+      el('label', { class: 'check', for: 'cb-' + sid }, cb, el('span', null, 'Erledigt', el('span', { class: 'sr-only', text: ' – Modul ' + id })), cbHinweis),
+      sessionButton(id, false)));
+
+  const suchtext = [id, m.titel, m.ziel, m.aufgabe, (Array.isArray(m.quellen) ? m.quellen : []).map((q) => (Array.isArray(q) ? q[0] : q && q.name))]
+    .flat().map(txt).join(' ').toLowerCase();
+  karten.set(id, { m, g, karte, titel, badge, cb, cbHinweis, ta, suchtext });
+  return karte;
+}
+
+function bauePlan() {
+  const box = $('#phasen');
+  for (const g of gruppen) {
+    const w = txt(g.ph.wochen);
+    g.bar = el('progress', { max: '1', value: '0' });
+    g.zahl = el('span', { class: 'ph-zahl' });
+    g.dran = el('span', { class: 'ph-dran', text: 'dran', hidden: true });
+    g.det = el('details', { class: 'phase', id: 'phase-' + slug(g.ph.id) },
+      el('summary', null,
+        el('span', { class: 'ph-kopf' },
+          el('span', { class: 'ph-nr', text: 'Phase ' + g.ph.id }),
+          el('span', { class: 'ph-titel', text: txt(g.ph.titel) }),
+          w ? el('span', { class: 'ph-wochen', text: (/[–—+-]/.test(w) ? 'Wochen ' : 'Woche ') + w }) : null,
+          g.dran),
+        el('span', { class: 'ph-fort' }, g.bar, g.zahl)),
+      el('div', { class: 'ph-inhalt' },
+        g.ph.ziel ? el('p', { class: 'ph-ziel', text: txt(g.ph.ziel) }) : null,
+        el('div', { class: 'modul-liste' }, g.module.map((m) => baueKarte(m, g))),
+        g.module.length ? null : el('p', { class: 'muted', text: 'Noch keine Module in dieser Phase.' })));
+    box.append(g.det);
+  }
+}
+
+function passt(k, st) {
+  if (filter === 'offen' && st === 'erledigt') return false;
+  if (filter === 'erledigt' && st !== 'erledigt') return false;
+  if (!suche) return true;
+  const heuhaufen = k.suchtext + ' ' + txt(notizen[k.m.id]).toLowerCase();
+  return suche.split(/\s+/).every((wort) => heuhaufen.includes(wort));
+}
+
+// Fokus nicht verlieren, wenn der Filter die gerade bearbeitete Karte ausblendet.
+function fokusNachAusblenden(id) {
+  const i = reihenfolge.findIndex((m) => m.id === id);
+  const ziel = reihenfolge.slice(i + 1).concat(reihenfolge.slice(0, i).reverse())
+    .map((m) => karten.get(m.id)).find((k) => !k.karte.hidden);
+  if (ziel) { ziel.g.det.open = true; ziel.titel.focus(); } else $('#h-plan').focus();
+}
+
+function zeigeModul(id) {
+  const k = karten.get(id);
+  if (!k) return;
+  if (k.karte.hidden) {
+    filter = 'alle';
+    document.querySelector('input[name=statusfilter][value=alle]').checked = true;
+    suche = '';
+    $('#suche').value = '';
+    aktualisiere();
+  }
+  k.g.det.open = true;
+  k.karte.scrollIntoView({ behavior: bewegungReduziert() ? 'auto' : 'smooth', block: 'start' });
+  k.titel.focus({ preventScroll: true });
+}
+
+/* ---------- Kopf-Kacheln ---------- */
+function setze(box, key, baue) {
+  if (box._key === key) return;
+  box._key = key;
+  box.replaceChildren(...baue().filter(Boolean));
+}
+
+function renderNaechstes(st) {
+  const m = reihenfolge.find((x) => st.get(x.id) !== 'erledigt') || null;
+  const key = m ? m.id + ':' + st.get(m.id) : reihenfolge.length ? 'fertig' : 'leer';
+  setze($('#k-next'), key, () => {
+    const teile = [el('h2', { class: 'k-label', text: 'Nächstes Modul' })];
+    if (!m) {
+      teile.push(el('h3', { class: 'next-titel', text: reihenfolge.length ? 'Alles erledigt – stark!' : 'Noch keine Module im Plan' }),
+        el('p', { class: 'next-ziel' }, reihenfolge.length ? 'Neue Module ergänzt du in Claude Code mit ' : 'Lege Module in Claude Code an mit ', el('code', { text: '/plan-pflege' }), '.'));
+      return teile;
+    }
+    const ph = phaseVon(m);
+    teile.push(
+      el('p', { class: 'next-meta' }, el('span', { class: 'm-id', text: m.id }),
+        el('span', { text: (ph ? 'Phase ' + ph.id + ' · ' : '') + fmtZahl(m.std) + ' Std.' }),
+        st.get(m.id) === 'begonnen' ? el('span', { class: 'badge begonnen', text: 'begonnen' }) : null),
+      el('h3', { class: 'next-titel', text: txt(m.titel) }),
+      m.ziel ? el('p', { class: 'next-ziel', text: txt(m.ziel) }) : null,
+      el('div', { class: 'reihe' }, sessionButton(m.id, true),
+        el('button', { type: 'button', class: 'btn', onclick: () => zeigeModul(m.id) }, 'Zum Modul')),
+      el('p', { class: 'muted klein' }, 'Kopiert ', el('code', { text: '/lern-session ' + m.id }), ' – in Claude Code einfügen.'));
+    return teile;
+  });
+  return m;
+}
+
+function renderFortschritt(st) {
+  const fertig = reihenfolge.filter((m) => st.get(m.id) === 'erledigt');
+  const begonnen = reihenfolge.filter((m) => st.get(m.id) === 'begonnen').length;
+  const stdFertig = summe(fertig), n = reihenfolge.length;
+  const pct = gesamtStd ? Math.round((stdFertig / gesamtStd) * 100) : 0;
+  setze($('#k-fort'), [fertig.length, begonnen, stdFertig].join('|'), () => [
+    el('h2', { class: 'k-label', text: 'Fortschritt' }),
+    el('p', { class: 'gross' }, String(fertig.length), el('small', { text: ' / ' + n + ' Module' })),
+    el('progress', { max: String(Math.max(n, 1)), value: String(fertig.length), 'aria-label': fertig.length + ' von ' + n + ' Modulen erledigt' }),
+    el('p', null, el('strong', { text: fmtZahl(stdFertig) }), ' / ' + fmtZahl(gesamtStd) + ' Std. · ' + pct + ' %'),
+    el('progress', { max: String(Math.max(gesamtStd, 1)), value: String(stdFertig), 'aria-label': fmtZahl(stdFertig) + ' von ' + fmtZahl(gesamtStd) + ' Stunden erledigt' }),
+    begonnen ? el('p', { class: 'muted klein', text: begonnen + (begonnen === 1 ? ' Modul begonnen' : ' Module begonnen') }) : null,
+  ]);
+}
+
+function renderStreak() {
+  const aktiv = new Set([...log.map((e) => e.d), ...Object.values(haken)].filter(istDatum));
+  const h = heute();
+  let tag = aktiv.has(h) ? h : plusTage(h, -1), serie = 0;
+  while (aktiv.has(tag)) { serie++; tag = plusTage(tag, -1); }
+  const letzte14 = Array.from({ length: 14 }, (_, i) => plusTage(h, i - 13));
+  const anzahl14 = letzte14.filter((d) => aktiv.has(d)).length;
+  const zuletzt = [...aktiv].sort().pop();
+  setze($('#k-streak'), [h, ...[...aktiv].sort()].join('|'), () => [
+    el('h2', { class: 'k-label', text: 'Streak' }),
+    el('p', { class: 'gross' }, String(serie), el('small', { text: serie === 1 ? ' Tag' : ' Tage' })),
+    el('div', { class: 'tage', role: 'img', 'aria-label': 'Letzte 14 Tage: an ' + anzahl14 + ' Tagen aktiv' },
+      letzte14.map((d) => el('span', { class: (aktiv.has(d) ? 'an' : '') + (d === h ? ' heute' : ''), title: fmtDatum(d) + (aktiv.has(d) ? ' – aktiv' : '') }))),
+    el('p', { class: 'muted klein', text: aktiv.has(h) ? 'Heute schon aktiv.'
+      : serie ? 'Heute noch nichts – eine kurze Session hält die Serie.' : 'Starte heute eine neue Serie.' }),
+    el('p', { class: 'muted klein', text: aktiv.size + (aktiv.size === 1 ? ' aktiver Tag' : ' aktive Tage') + ' insgesamt' + (zuletzt ? ' · zuletzt ' + fmtDatum(zuletzt) : '') }),
+  ]);
+}
+
+function renderPlanStatus(st) {
+  const ist = summe(reihenfolge.filter((m) => st.get(m.id) === 'erledigt'));
+  setze($('#k-plan'), [start, heute(), ist].join('|'), () => {
+    const teile = [el('h2', { class: 'k-label', text: 'Plan-Status' })];
+    if (!start) {
+      teile.push(el('p', { class: 'gross' }, 'Kein Start', el('small', { text: ' festgelegt' })),
+        el('p', { class: 'muted', text: 'Mit einem Startdatum siehst du „Woche X von ' + PLAN_WOCHEN + '“ und dein Soll an Stunden.' }),
+        el('div', { class: 'reihe' }, el('button', { type: 'button', class: 'btn primaer', onclick: () => oeffneEinstellungen(true) }, 'Startdatum festlegen')));
+      return teile;
+    }
+    const tage = tageZwischen(start, heute());
+    if (tage < 0) {
+      teile.push(el('p', { class: 'gross' }, 'in ' + -tage, el('small', { text: -tage === 1 ? ' Tag' : ' Tagen' })),
+        el('p', { class: 'muted', text: 'Start am ' + fmtDatum(start) + ' · ' + PLAN_WOCHEN + ' Wochen · ' + fmtZahl(gesamtStd) + ' Std.' }));
+      return teile;
+    }
+    const woche = Math.floor(tage / 7) + 1;
+    const anteil = Math.min(tage + 1, PLAN_WOCHEN * 7) / (PLAN_WOCHEN * 7);
+    const soll = Math.round(gesamtStd * anteil);
+    const diff = ist - soll;
+    const urteil = Math.abs(diff) < 1 ? 'im Plan' : diff > 0 ? fmtZahl(diff) + ' Std. voraus' : fmtZahl(-diff) + ' Std. hinter Plan';
+    const pIst = gesamtStd ? Math.min(ist / gesamtStd, 1) * 100 : 0;
+    const ph = phasen.find((p) => { const s = wochenSpanne(p.wochen); return s && woche >= s[0] && woche <= s[1]; });
+    teile.push(
+      el('p', { class: 'gross' }, 'Woche ' + woche, el('small', { text: ' von ' + PLAN_WOCHEN })),
+      el('div', { class: 'sollist', role: 'img', 'aria-label': 'Ist ' + fmtZahl(ist) + ' Stunden, Soll ' + fmtZahl(soll) + ' von ' + fmtZahl(gesamtStd) + ' Stunden' },
+        el('div', { class: 'ist', style: 'width:' + pIst.toFixed(2) + '%' }),
+        el('div', { class: 'soll', style: 'left:' + (anteil * 100).toFixed(2) + '%', title: 'Soll heute' })),
+      el('p', null, el('strong', { text: 'Ist ' + fmtZahl(ist) + ' Std.' }), ' · Soll ' + fmtZahl(soll) + ' Std. – ' + urteil),
+      woche > PLAN_WOCHEN ? el('p', { class: 'muted klein', text: 'Der ' + PLAN_WOCHEN + '-Wochen-Zeitraum ist vorbei – Zeit fürs Abschlussprojekt oder einen neuen Plan.' }) : null,
+      el('p', { class: 'muted klein', text: 'Start ' + fmtDatum(start) + (ph ? ' · laut Plan jetzt Phase ' + ph.id + ': ' + txt(ph.titel) : '') }));
+    return teile;
+  });
+}
+
+/* ---------- News ---------- */
+function baueNewsFilter() {
+  const tags = [...new Set(news.map((n) => txt(n.tag)).filter(Boolean))]
+    .sort((a, b) => {
+      const ia = TAG_REIHENFOLGE.indexOf(a), ib = TAG_REIHENFOLGE.indexOf(b);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b, 'de');
+    });
+  const sel = $('#news-tag');
+  sel.append(...tags.map((t) => el('option', { value: t, text: t })));
+  sel.hidden = !news.length;
+  sel.addEventListener('change', renderNews);
+}
+function renderNews() {
+  const tag = $('#news-tag').value;
+  const treffer = newsSortiert.filter((n) => !tag || txt(n.tag) === tag);
+  const zeige = treffer.slice(0, NEWS_MAX);
+  $('#news-liste').replaceChildren(...zeige.map((n) => el('li', null,
+    el('div', { class: 'meta' },
+      istDatum(n.d) ? el('time', { datetime: n.d, text: fmtDatum(n.d) }) : el('span', { text: fmtDatum(n.d) }),
+      n.tag ? el('span', { class: 'chip', text: txt(n.tag) }) : null,
+      n.mod ? modulLink(txt(n.mod), 'Modul ' + txt(n.mod)) : null),
+    sichereUrl(n.url)
+      ? el('a', { class: 'news-titel', href: n.url, target: '_blank', rel: 'noopener noreferrer' }, txt(n.titel) || txt(n.url), el('span', { class: 'sr-only', text: ' (neuer Tab)' }))
+      : el('p', { class: 'news-titel', text: txt(n.titel) }),
+    n.kurz ? el('p', { class: 'news-kurz', text: txt(n.kurz) }) : null)));
+  $('#news-leer').hidden = news.length > 0;
+  $('#news-zahl').textContent = !news.length ? ''
+    : treffer.length > NEWS_MAX ? 'Neueste ' + NEWS_MAX + ' von ' + treffer.length + ' News' + (tag ? ' zu „' + tag + '“' : '')
+    : treffer.length + (treffer.length === 1 ? ' Meldung' : ' Meldungen') + (tag ? ' zu „' + tag + '“' : '') + ' · aktualisieren mit /ki-news';
+}
+
+/* ---------- Lernjournal ---------- */
+let journalAlle = false;
+function renderJournal() {
+  const eintraege = [
+    ...log.map((e, i) => ({ typ: 'log', d: istDatum(e.d) ? e.d : '', id: txt(e.id), e, ord: 1e6 + i })),
+    ...Object.entries(haken).map(([id, d], i) => ({ typ: 'haken', d, id, ord: i })),   // später gesetzte Häkchen zuerst
+  ].sort((a, b) => (a.d < b.d ? 1 : a.d > b.d ? -1 : b.ord - a.ord));
+  const liste = $('#j-liste');
+  const key = JSON.stringify(haken) + '|' + journalAlle + '|' + heute();
+  if (liste._key !== key) {
+    liste._key = key;
+    const zeige = journalAlle ? eintraege : eintraege.slice(0, JOURNAL_MAX);
+    liste.replaceChildren(...zeige.map((x) => {
+      const m = modulMap.get(x.id);
+      const name = x.id ? (m ? x.id + ' · ' + txt(m.titel) : 'Modul ' + x.id) : 'ohne Modul';
+      const meta = el('div', { class: 'meta' },
+        istDatum(x.d) ? el('time', { datetime: x.d, text: fmtDatum(x.d) }) : el('span', { text: fmtDatum(x.e && x.e.d) }),
+        x.typ === 'haken' ? el('span', { class: 'chip', text: 'abgehakt' }) : el('span', { class: 'chip', text: 'Session' }),
+        x.typ === 'log' && x.e.quiz ? el('span', { class: 'chip', text: 'Quiz ' + txt(x.e.quiz) }) : null,
+        x.typ === 'log' && (x.e.fertig === true || x.e.fertig === 'true') ? el('span', { class: 'chip akzent', text: 'abgeschlossen' }) : null);
+      return el('li', null, meta,
+        el('p', { class: 'j-text' }, x.id ? modulLink(x.id, name) : name),
+        x.typ === 'log' && x.e.note ? el('p', { class: 'j-text muted', text: txt(x.e.note) }) : null);
+    }));
+    $('#j-leer').hidden = eintraege.length > 0;
+    $('#j-zahl').textContent = eintraege.length ? eintraege.length + (eintraege.length === 1 ? ' Eintrag' : ' Einträge') : '';
+    const mehr = $('#j-mehr');
+    mehr.hidden = eintraege.length <= JOURNAL_MAX;
+    mehr.textContent = journalAlle ? 'Weniger anzeigen' : 'Alle ' + eintraege.length + ' anzeigen';
+  }
+}
+
+/* ---------- Gesamt-Update ---------- */
+function aktualisiere() {
+  const st = new Map(reihenfolge.map((m) => [m.id, statusVon(m.id)]));
+  const naechstes = renderNaechstes(st);
+  renderFortschritt(st);
+  renderStreak();
+  renderPlanStatus(st);
+
+  const filterAktiv = filter !== 'alle' || !!suche;
+  let sichtbar = 0;
+  for (const k of karten.values()) {
+    const s = st.get(k.m.id), perLog = fertigLautLog.has(k.m.id);
+    k.karte.dataset.status = s;
+    k.badge.className = 'badge ' + s;
+    k.badge.textContent = s;
+    k.cb.checked = perLog || !!haken[k.m.id];
+    k.cb.disabled = perLog;
+    k.cbHinweis.textContent = perLog ? '(laut Journal)' : haken[k.m.id] ? '(' + fmtDatum(haken[k.m.id]) + ')' : '';
+    k.karte.hidden = !passt(k, s);
+    if (!k.karte.hidden) sichtbar++;
+  }
+  for (const g of gruppen) {
+    const n = g.module.length;
+    const fertig = g.module.filter((m) => st.get(m.id) === 'erledigt');
+    g.bar.max = Math.max(n, 1);
+    g.bar.value = fertig.length;
+    g.bar.setAttribute('aria-label', 'Phase ' + g.ph.id + ': ' + fertig.length + ' von ' + n + ' Modulen erledigt');
+    g.zahl.textContent = fertig.length + '/' + n + ' · ' + fmtZahl(summe(fertig)) + '/' + fmtZahl(summe(g.module)) + ' Std.';
+    g.det.classList.toggle('komplett', n > 0 && fertig.length === n);
+    g.dran.hidden = !(naechstes && naechstes.p === g.ph.id && g.module.includes(naechstes));
+    g.det.hidden = filterAktiv && !g.module.some((m) => !karten.get(m.id).karte.hidden);
+  }
+  $('#treffer').textContent = filterAktiv
+    ? sichtbar + ' von ' + reihenfolge.length + ' Modulen'
+    : reihenfolge.length + ' Module · ' + fmtZahl(gesamtStd) + ' Std.';
+  $('#plan-leer').hidden = !(filterAktiv && sichtbar === 0 && reihenfolge.length > 0);
+  renderJournal();
+}
+
+/* ---------- Einstellungen ---------- */
+function oeffneEinstellungen(fokusStart) {
+  const d = $('#einst');
+  $('#einst-status').textContent = '';
+  $('#start').value = start;
+  if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
+  if (fokusStart) $('#start').focus();
+}
+// Liefert 'ja' (OK-Button), 'alt' (optionaler zweiter Button) oder 'nein'/'' (abgebrochen).
+function frage(titel, text, okText, gefahr, altText) {
+  const d = $('#frage');
+  if (typeof d.showModal !== 'function') return Promise.resolve(window.confirm(titel + '\n\n' + text) ? 'ja' : 'nein');
+  $('#frage-titel').textContent = titel;
+  $('#frage-text').textContent = text;
+  const ok = $('#frage-ok');
+  ok.textContent = okText;
+  ok.className = gefahr ? 'btn gefahr' : 'btn primaer';
+  $('#frage-alt').textContent = altText || '';
+  $('#frage-alt').hidden = !altText;
+  d.returnValue = '';
+  return new Promise((resolve) => {
+    d.addEventListener('close', () => resolve(d.returnValue), { once: true });
+    d.showModal();
+  });
+}
+function setzeStart(wert) {
+  start = plausibel(wert) ? wert : '';
+  if (document.activeElement !== $('#start')) $('#start').value = start;   // nie ins Feld schreiben, während getippt wird
+  const ok = speichereStart();
+  aktualisiere();
+  melde(!ok ? 'Speichern fehlgeschlagen.' : start ? 'Startdatum: ' + fmtVoll(start) : 'Startdatum entfernt');
+}
+function syncFormulare() {
+  for (const k of karten.values()) if (document.activeElement !== k.ta) k.ta.value = notizen[k.m.id] || '';
+  if (document.activeElement !== $('#start')) $('#start').value = start;
+}
+const umfang = (done, notes) => anzahl(Object.keys(done).length, 'Häkchen', 'Häkchen') + ', ' + anzahl(Object.keys(notes).length, 'Notiz', 'Notizen');
+function ladeHerunter(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = el('a', { href: url, download: name });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+function exportiere() {
+  const daten = { app: 'ki-lernplan', version: 1, exportiert: heute(), start, done: haken, notes: notizen };
+  const name = 'ki-lernplan-sicherung-' + heute() + '.json';
+  const blob = new Blob([JSON.stringify(daten, null, 2)], { type: 'application/json' });
+  const info = 'Sicherung exportiert (' + umfang(haken, notizen) + ').';
+  // Auf Touch-Geräten (iPhone) übers Teilen-Menü: „In Dateien sichern“, AirDrop, Mail an sich selbst.
+  let datei = null;
+  try { datei = new File([blob], name, { type: 'application/json' }); } catch (e) { /* alter Browser */ }
+  const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+  if (datei && touch && navigator.canShare && navigator.canShare({ files: [datei] })) {
+    navigator.share({ files: [datei], title: 'KI-Lernplan-Sicherung' })
+      .then(() => melde(info))
+      .catch((e) => { if (e && e.name === 'AbortError') return; ladeHerunter(blob, name); melde(info); });
+    return;
+  }
+  ladeHerunter(blob, name);
+  melde(info);
+}
+// Zusammenführen: Häkchen vereinen (frühestes Datum gewinnt), Notizen ergänzen, eigenes Startdatum behalten.
+function fuehreZusammen(neu) {
+  const done = { ...haken };
+  for (const [id, d] of Object.entries(neu.done)) if (!done[id] || d < done[id]) done[id] = d;
+  const notes = { ...notizen };
+  for (const [id, t] of Object.entries(neu.notes)) {
+    const a = notes[id] || '';
+    notes[id] = !a.trim() || t.includes(a) ? t : a.includes(t) ? a : a.trimEnd() + '\n\n' + t;
+  }
+  return { done, notes, start: start || neu.start };
+}
+async function importiere(datei) {
+  let obj;
+  try { obj = JSON.parse(await datei.text()); } catch (e) { melde('Import fehlgeschlagen: Die Datei ist kein gültiges JSON.'); return; }
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj) || !('done' in obj || 'notes' in obj || 'start' in obj)) {
+    melde('Import fehlgeschlagen: Das ist keine Sicherung dieses Dashboards.');
+    return;
+  }
+  const neu = { done: saubereHaken(obj.done), notes: saubereNotizen(obj.notes), start: plausibel(obj.start) ? obj.start : '' };
+  const wahl = await frage('Sicherung importieren?',
+    'Sicherung' + (istDatum(obj.exportiert) ? ' vom ' + fmtVoll(obj.exportiert) : '') + ': ' + umfang(neu.done, neu.notes)
+    + (neu.start ? ', Start ' + fmtVoll(neu.start) : ', kein Startdatum')
+    + '. „Zusammenführen“ behält zusätzlich alles, was auf diesem Gerät steht. „Ersetzen“ überschreibt es.',
+    'Zusammenführen', false, 'Ersetzen');
+  if (wahl !== 'ja' && wahl !== 'alt') return;
+  const ergebnis = wahl === 'ja' ? fuehreZusammen(neu) : neu;
+  haken = ergebnis.done; notizen = ergebnis.notes; start = ergebnis.start;
+  const gespeichert = store.set('done', haken) & store.set('notes', notizen) & speichereStart();
+  syncFormulare();
+  aktualisiere();
+  melde(!gespeichert ? 'Importiert, aber nicht dauerhaft gespeichert (Browser-Speicher nicht verfügbar).'
+    : (wahl === 'ja' ? 'Zusammengeführt' : 'Ersetzt') + ' – jetzt ' + umfang(haken, notizen) + '.');
+}
+async function zuruecksetzen() {
+  const wahl = await frage('Alles zurücksetzen?',
+    'Alle Häkchen, Notizen und das Startdatum auf diesem Gerät werden gelöscht. Lernjournal und News in data/ bleiben erhalten. Tipp: Vorher exportieren.',
+    'Zurücksetzen', true);
+  if (wahl !== 'ja') return;
+  store.leeren();
+  haken = {}; notizen = {}; start = '';
+  syncFormulare();
+  aktualisiere();
+  melde('Alles zurückgesetzt.');
+}
+
+/* ---------- Start ---------- */
+ladeZustand();
+document.title = txt(planDaten.titel) || 'KI-Lernplan';
+$('#titel').textContent = document.title;
+$('#start-label').textContent = 'Beginn deines ' + PLAN_WOCHEN + '-Wochen-Plans – daraus entstehen „Woche X von ' + PLAN_WOCHEN + '“ und die Soll-Stunden.';
+
+// Ein Syntaxfehler lässt die ganze Datei ausfallen – dann fehlt die globale Variable. So lässt sich die Datei benennen.
+const fehler = [];
+const kaputt = (datei) => fehler.push(datei + ' konnte nicht geladen werden – vermutlich ein Syntaxfehler in der zuletzt angehängten Zeile (z. B. doppelte Anführungszeichen im Text).');
+if (!planOk) kaputt('data/plan.js');
+if (!Array.isArray(window.LOG)) kaputt('data/log.js');
+if (!Array.isArray(window.NEWS)) kaputt('data/news.js');
+if (window.KILP_LADEFEHLER.length) fehler.push(...window.KILP_LADEFEHLER.map((f) => 'Fehler beim Laden: ' + f));
+if (fehler.length) banner(fehler.concat('Tipp: Liegt index.html neben dem Ordner data/? Dann Claude Code bitten, die zuletzt angehängte Zeile der genannten Datei zu prüfen und zu reparieren (mit Node: node --check data/<datei>.js).'));
+if (!store.ok) banner(['Dieser Browser erlaubt hier keinen lokalen Speicher. Häkchen, Notizen und Startdatum gehen beim Schließen verloren – exportiere bei Bedarf eine Sicherung.']);
+
+bauePlan();
+baueNewsFilter();
+renderNews();
+aktualisiere();
+const erstesOffenes = reihenfolge.find((m) => statusVon(m.id) !== 'erledigt');
+if (erstesOffenes) karten.get(erstesOffenes.id).g.det.open = true;
+
+// Bei aktivem Filter sind nur Phasen mit Treffern sichtbar – diese aufklappen, damit die Treffer zu sehen sind.
+function oeffneTreffer() {
+  if (filter === 'alle' && !suche) return;
+  for (const g of gruppen) if (!g.det.hidden) g.det.open = true;
+}
+document.querySelectorAll('input[name=statusfilter]').forEach((r) => r.addEventListener('change', () => { filter = r.value; aktualisiere(); oeffneTreffer(); }));
+$('#suche').addEventListener('input', (e) => {
+  suche = e.target.value.trim().toLowerCase();
+  aktualisiere();
+  oeffneTreffer();
+});
+$('#filter-reset').addEventListener('click', () => {
+  filter = 'alle'; suche = '';
+  document.querySelector('input[name=statusfilter][value=alle]').checked = true;
+  $('#suche').value = '';
+  aktualisiere();
+  $('#suche').focus();
+});
+$('#j-mehr').addEventListener('click', () => { journalAlle = !journalAlle; renderJournal(); });
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('a[data-modul]');
+  if (!a) return;
+  e.preventDefault();
+  zeigeModul(a.dataset.modul);
+});
+
+$('#btn-einst').addEventListener('click', () => oeffneEinstellungen(false));
+$('#einst').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); });
+// Wurde der auslösende Button inzwischen neu gerendert, landet der Fokus sonst auf <body>.
+$('#einst').addEventListener('close', (e) => {
+  const a = document.activeElement;
+  if (a && a !== document.body && !e.currentTarget.contains(a)) return;
+  const h = $('#k-plan .k-label');
+  if (h) { h.tabIndex = -1; h.focus(); } else $('#btn-einst').focus();
+});
+// Beim Tippen meldet das Datumsfeld Zwischenstände wie 0002-10-05 – nur vollständige, plausible Daten übernehmen.
+$('#start').addEventListener('change', (e) => { if (plausibel(e.target.value) && e.target.value !== start) setzeStart(e.target.value); });
+$('#start').addEventListener('blur', (e) => { if (e.target.value !== start) e.target.value = start; });
+$('#start-heute').addEventListener('click', () => setzeStart(heute()));
+$('#start-weg').addEventListener('click', () => setzeStart(''));
+$('#export').addEventListener('click', exportiere);
+$('#import-btn').addEventListener('click', () => $('#import').click());
+$('#import').addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) importiere(f); });
+$('#reset').addEventListener('click', zuruecksetzen);
+
+window.addEventListener('storage', (e) => {
+  if (e.key !== null && !txt(e.key).startsWith(P)) return;
+  ladeZustand();
+  syncFormulare();
+  aktualisiere();
+});
+// Tageswechsel: neu laden, damit „heute/gestern“ überall stimmt (Zustand liegt in localStorage, Notizen speichern sofort).
+const ladeTag = heute();
+function pruefeTageswechsel() {
+  if (heute() === ladeTag) return;
+  const tippt = document.activeElement && /^(TEXTAREA|INPUT|SELECT)$/.test(document.activeElement.tagName);
+  if (store.ok && !tippt && !document.querySelector('dialog[open]')) location.reload();
+  else aktualisiere();
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { pruefeTageswechsel(); pruefeNeueDaten(); } });
+setInterval(() => { if (!document.hidden) { pruefeTageswechsel(); pruefeNeueDaten(); } }, 5 * 60 * 1000);
+
+/* ---------- App (iPhone-Home-Bildschirm) ---------- */
+const imNetz = /^https?:$/.test(location.protocol);
+const istApp = document.documentElement.classList.contains('app');
+if (imNetz && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+if (istApp && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});   // iOS soll den Speicher nicht aufräumen
+
+// Neue Inhalte erkennen: die Daten-Dateien unsichtbar neu laden und mit dem geladenen Stand vergleichen.
+const DATEN = [['data/plan.js', 'PLAN'], ['data/log.js', 'LOG'], ['data/news.js', 'NEWS']];
+const stempel = (w) => JSON.stringify(DATEN.map(([, name]) => (w[name] === undefined ? null : w[name])));
+let geladen = '';
+try { geladen = stempel(window); } catch (e) { /* dann keine Prüfung */ }
+let letztePruefung = Date.now(), prueft = false;
+function pruefeNeueDaten() {
+  if (!geladen || prueft || !$('#update').hidden || navigator.onLine === false || Date.now() - letztePruefung < 60 * 1000) return;
+  prueft = true;
+  letztePruefung = Date.now();
+  const f = el('iframe', { hidden: true, 'aria-hidden': 'true', tabindex: '-1', title: 'Datenprüfung' });
+  let timer;
+  const ende = (neu) => {
+    clearTimeout(timer);
+    f.remove();
+    prueft = false;
+    if (neu) { $('#update').hidden = false; document.body.classList.add('hat-update'); }
+  };
+  timer = setTimeout(() => ende(false), 15000);
+  f.addEventListener('load', () => {
+    let neu = false;
+    try { neu = stempel(f.contentWindow) !== geladen; } catch (e) { /* kein Zugriff – nichts melden */ }
+    ende(neu);
+  }, { once: true });
+  const t = Date.now();
+  f.srcdoc = DATEN.map(([src]) => '<script src="' + src + '?t=' + t + '"><\/script>').join('');
+  document.body.append(f);
+}
+$('#update-btn').addEventListener('click', () => location.reload());
+
+function zeigeOnline() { $('#offline').hidden = !imNetz || navigator.onLine !== false; }
+window.addEventListener('online', () => { zeigeOnline(); pruefeNeueDaten(); });
+window.addEventListener('offline', zeigeOnline);
+zeigeOnline();
+
+// Safari auf iPhone/iPad, noch nicht installiert: einmalig erklären, wie die App auf den Home-Bildschirm kommt.
+const istIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+if (imNetz && istIOS && !istApp && !store.get('app-hinweis', false)) {
+  const box = el('div', { class: 'banner info', role: 'note' },
+    el('p', null, el('strong', { text: 'Als App installieren: ' }), 'In Safari auf „Teilen“ tippen, dann „Zum Home-Bildschirm“. Danach startet der Lernplan wie eine App und funktioniert auch offline.'),
+    el('button', { type: 'button', class: 'btn', onclick: () => { store.set('app-hinweis', true); box.remove(); } }, 'Ausblenden'));
+  $('#banner-box').append(box);
+}
+
+// Tab-Leiste: den Bereich markieren, in dem man gerade ist.
+const tabbar = $('.tabbar');
+const tabs = [...tabbar.querySelectorAll('a')];
+function markiereTab() {
+  if (getComputedStyle(tabbar).display === 'none') return;
+  const grenze = window.innerHeight * 0.35;
+  let aktiv = 0;
+  tabs.forEach((a, i) => { const z = document.getElementById(a.hash.slice(1)); if (z && z.getBoundingClientRect().top <= grenze) aktiv = i; });
+  if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) aktiv = tabs.length - 1;
+  tabs.forEach((a, i) => { if (i === aktiv) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); });
+}
+let tabRaf = 0;
+const planeTab = () => { if (!tabRaf) tabRaf = requestAnimationFrame(() => { tabRaf = 0; markiereTab(); }); };
+window.addEventListener('scroll', planeTab, { passive: true });
+window.addEventListener('resize', planeTab);
+markiereTab();
+
+if (location.hash.startsWith('#m-')) {
+  const ziel = [...karten.keys()].find((id) => '#m-' + slug(id) === location.hash);
+  if (ziel) {
+    zeigeModul(ziel);
+    // Der Browser springt nach dem Laden selbst zum Anker und nimmt dabei den Fokus weg – danach erneut setzen.
+    window.addEventListener('load', () => setTimeout(() => {
+      if (document.activeElement === document.body) karten.get(ziel).titel.focus({ preventScroll: true });
+    }, 50), { once: true });
+  }
+}
+})();
+</script>
+</body>
+</html>

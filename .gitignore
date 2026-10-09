@@ -1,0 +1,9 @@
+# Veröffentlicht (GitHub Pages) wird nur das Dashboard – alles andere bleibt auf dem PC.
+/*
+!/.gitignore
+!/.nojekyll
+!/index.html
+!/sw.js
+!/manifest.webmanifest
+!/icons/
+!/data/
