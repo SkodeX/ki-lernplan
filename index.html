@@ -27,14 +27,17 @@ if ((window.matchMedia && matchMedia('(display-mode: standalone)').matches) || n
   --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   --mono:ui-monospace,SFMono-Regular,"Cascadia Mono",Menlo,Consolas,monospace;
   --unten:0px;   /* Platz für die Tab-Leiste der App */
+  --update:0px;  /* Platz für die Leiste „Neue Inhalte“ */
 }
+html.hat-update{--update:76px}
+html{scroll-padding-bottom:calc(var(--unten) + var(--update) + env(safe-area-inset-bottom) + 8px)}
 @media (prefers-color-scheme:dark){:root{
   --bg:#0e1115;--surface:#161a20;--surface-2:#1d222a;--text:#e5e8ec;--muted:#9ba3af;--border:#2a3039;--track:#2a3039;
   --accent:#2dd4bf;--accent-strong:#5eead4;--accent-soft:#10302c;--on-accent:#04211d;--danger:#f97066;--on-danger:#0e1115;--shadow:none;
 }}
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--text);font:400 1rem/1.55 var(--font)}
+body{margin:0;padding-bottom:var(--update);background:var(--bg);color:var(--text);font:400 1rem/1.55 var(--font)}
 h1,h2,h3{line-height:1.25;margin:0}
 p{margin:0}
 a{color:var(--accent);text-underline-offset:.15em}
@@ -193,21 +196,20 @@ dialog::backdrop{background:rgb(10 12 16 / .5)}
 .ende{justify-content:flex-end}
 
 /* Toast */
-.toast{position:fixed;left:50%;bottom:calc(16px + var(--unten) + env(safe-area-inset-bottom));z-index:30;width:max-content;max-width:calc(100% - 32px);padding:.65rem 1rem;border-radius:10px;background:var(--text);color:var(--bg);font-size:.95rem;box-shadow:0 8px 24px rgb(0 0 0 / .2);transform:translate(-50%,160%);opacity:0;transition:transform .2s,opacity .2s;pointer-events:none}
+.toast{position:fixed;left:50%;bottom:calc(16px + var(--unten) + var(--update) + env(safe-area-inset-bottom));z-index:30;width:max-content;max-width:calc(100% - 32px);padding:.65rem 1rem;border-radius:10px;background:var(--text);color:var(--bg);font-size:.95rem;box-shadow:0 8px 24px rgb(0 0 0 / .2);transform:translate(-50%,160%);opacity:0;transition:transform .2s,opacity .2s;pointer-events:none}
 .toast.zeigen{transform:translate(-50%,0);opacity:1}
-body.hat-update .toast{bottom:calc(84px + var(--unten) + env(safe-area-inset-bottom))}
-body.hat-update{padding-bottom:calc(76px + var(--unten) + env(safe-area-inset-bottom))}
 .fuss{padding:0 16px calc(32px + env(safe-area-inset-bottom));text-align:center;font-size:.82rem;color:var(--muted)}
 
 /* Hinweis auf neue Inhalte */
 .update{position:fixed;left:50%;bottom:calc(16px + var(--unten) + env(safe-area-inset-bottom));z-index:29;transform:translateX(-50%);display:flex;align-items:center;gap:12px;width:max-content;max-width:calc(100% - 32px);padding:8px 8px 8px 16px;border-radius:12px;background:var(--text);color:var(--bg);font-size:.95rem;box-shadow:0 8px 24px rgb(0 0 0 / .2)}
 .update .btn{min-height:2.5rem}
+.update :focus-visible{outline-color:var(--bg)}
 
 /* Tab-Leiste – nur in der App (Home-Bildschirm) auf schmalen Displays */
 .tabbar{display:none}
 @media (max-width:999px){
   html.app{--unten:58px}
-  html.app body{padding-bottom:calc(var(--unten) + env(safe-area-inset-bottom))}
+  html.app body{padding-bottom:calc(var(--unten) + var(--update) + env(safe-area-inset-bottom))}
   html.app .top nav a{display:none}
   html.app .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:25;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);background:var(--surface);background:color-mix(in srgb,var(--surface) 92%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-top:1px solid var(--border)}
 }
@@ -326,6 +328,7 @@ body.hat-update{padding-bottom:calc(76px + var(--unten) + env(safe-area-inset-bo
   <span>Neue Inhalte verfügbar</span>
   <button type="button" class="btn primaer" id="update-btn">Neu laden</button>
 </div>
+<p id="update-ansage" class="sr-only" role="status"></p>
 
 <dialog id="einst" aria-labelledby="einst-titel">
   <form method="dialog" class="dlg-kopf">
@@ -443,14 +446,6 @@ const store = {
   get(key, fallback) { try { const v = localStorage.getItem(P + key); return v == null ? fallback : JSON.parse(v); } catch (e) { return fallback; } },
   set(key, wert) { try { localStorage.setItem(P + key, JSON.stringify(wert)); return true; } catch (e) { return false; } },
   weg(key) { try { localStorage.removeItem(P + key); return true; } catch (e) { return false; } },
-  leeren() {
-    try {
-      const keys = [];
-      for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(P)) keys.push(k); }
-      keys.forEach((k) => localStorage.removeItem(k));
-      return true;
-    } catch (e) { return false; }
-  },
 };
 const nurObjekt = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
 function saubereHaken(v) { const r = {}; for (const [id, d] of Object.entries(nurObjekt(v))) if (istDatum(d)) r[id] = d; return r; }
@@ -934,14 +929,21 @@ function exportiere() {
   const name = 'ki-lernplan-sicherung-' + heute() + '.json';
   const blob = new Blob([JSON.stringify(daten, null, 2)], { type: 'application/json' });
   const info = 'Sicherung exportiert (' + umfang(haken, notizen) + ').';
-  // Auf Touch-Geräten (iPhone) übers Teilen-Menü: „In Dateien sichern“, AirDrop, Mail an sich selbst.
+  // Auf Touch-Geräten und in der App übers Teilen-Menü: „In Dateien sichern“, AirDrop, Mail an sich selbst.
+  // In der iOS-App keinen Download versuchen – der hängt dort oder öffnet eine Vorschau ohne Zurück.
   let datei = null;
   try { datei = new File([blob], name, { type: 'application/json' }); } catch (e) { /* alter Browser */ }
+  const app = document.documentElement.classList.contains('app');
   const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
-  if (datei && touch && navigator.canShare && navigator.canShare({ files: [datei] })) {
+  if (datei && (touch || app) && navigator.canShare && navigator.canShare({ files: [datei] })) {
     navigator.share({ files: [datei], title: 'KI-Lernplan-Sicherung' })
       .then(() => melde(info))
-      .catch((e) => { if (e && e.name === 'AbortError') return; ladeHerunter(blob, name); melde(info); });
+      .catch((e) => {
+        if (e && e.name === 'AbortError') return;
+        if (app) { melde('Teilen hat nicht geklappt – bitte noch einmal tippen.'); return; }
+        ladeHerunter(blob, name);
+        melde(info);
+      });
     return;
   }
   ladeHerunter(blob, name);
@@ -985,7 +987,7 @@ async function zuruecksetzen() {
     'Alle Häkchen, Notizen und das Startdatum auf diesem Gerät werden gelöscht. Lernjournal und News in data/ bleiben erhalten. Tipp: Vorher exportieren.',
     'Zurücksetzen', true);
   if (wahl !== 'ja') return;
-  store.leeren();
+  ['done', 'notes', 'start'].forEach((k) => store.weg(k));   // nur das, was der Dialog nennt
   haken = {}; notizen = {}; start = '';
   syncFormulare();
   aktualisiere();
@@ -1052,7 +1054,8 @@ $('#einst').addEventListener('close', (e) => {
 });
 // Beim Tippen meldet das Datumsfeld Zwischenstände wie 0002-10-05 – nur vollständige, plausible Daten übernehmen.
 $('#start').addEventListener('change', (e) => { if (plausibel(e.target.value) && e.target.value !== start) setzeStart(e.target.value); });
-$('#start').addEventListener('blur', (e) => { if (e.target.value !== start) e.target.value = start; });
+// Verzögert, weil iOS „change“ des Datums-Rads teils erst nach „blur“ meldet.
+$('#start').addEventListener('blur', (e) => { setTimeout(() => { if (document.activeElement !== e.target && e.target.value !== start) e.target.value = start; }, 0); });
 $('#start-heute').addEventListener('click', () => setzeStart(heute()));
 $('#start-weg').addEventListener('click', () => setzeStart(''));
 $('#export').addEventListener('click', exportiere);
@@ -1099,12 +1102,20 @@ function pruefeNeueDaten() {
     clearTimeout(timer);
     f.remove();
     prueft = false;
-    if (neu) { $('#update').hidden = false; document.body.classList.add('hat-update'); }
+    if (neu) {
+      $('#update').hidden = false;
+      document.documentElement.classList.add('hat-update');
+      $('#update-ansage').textContent = 'Neue Inhalte verfügbar – Schaltfläche „Neu laden“ am unteren Rand.';
+    }
   };
   timer = setTimeout(() => ende(false), 15000);
   f.addEventListener('load', () => {
     let neu = false;
-    try { neu = stempel(f.contentWindow) !== geladen; } catch (e) { /* kein Zugriff – nichts melden */ }
+    try {
+      // Fehlt dort eine Datei, die hier geladen ist, war eher das Netz weg (Funkloch trotz onLine) – nichts melden.
+      const w = f.contentWindow;
+      neu = !DATEN.some(([, name]) => w[name] === undefined && window[name] !== undefined) && stempel(w) !== geladen;
+    } catch (e) { /* kein Zugriff – nichts melden */ }
     ende(neu);
   }, { once: true });
   const t = Date.now();
@@ -1122,8 +1133,8 @@ zeigeOnline();
 const istIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 if (imNetz && istIOS && !istApp && !store.get('app-hinweis', false)) {
   const box = el('div', { class: 'banner info', role: 'note' },
-    el('p', null, el('strong', { text: 'Als App installieren: ' }), 'In Safari auf „Teilen“ tippen, dann „Zum Home-Bildschirm“. Danach startet der Lernplan wie eine App und funktioniert auch offline.'),
-    el('button', { type: 'button', class: 'btn', onclick: () => { store.set('app-hinweis', true); box.remove(); } }, 'Ausblenden'));
+    el('p', null, el('strong', { text: 'Als App installieren: ' }), 'In Safari auf „Teilen“ tippen, dann „Zum Home-Bildschirm“. Die App einmal online öffnen, danach geht sie auch offline. Sie hat eigenen Speicher: Häkchen von hier vorher unter Einstellungen exportieren und dort importieren.'),
+    el('button', { type: 'button', class: 'btn', onclick: () => { store.set('app-hinweis', true); $('#btn-einst').focus(); box.remove(); } }, 'Ausblenden'));
   $('#banner-box').append(box);
 }
 

@@ -31,6 +31,8 @@ self.addEventListener('fetch', (e) => {
   const netz = fetch(seite ? req : new Request(req, { cache: 'no-cache' }));
   e.waitUntil(netz.then((res) => {
     if (!res.ok || res.type !== 'basic' || res.redirected) return;
+    // Wer data/news.js o. Ä. direkt im Tab öffnet, darf damit nicht die Startseite im Cache ersetzen.
+    if (seite && !(res.headers.get('content-type') || '').includes('text/html')) return;
     const kopie = res.clone();   // sofort klonen, bevor die Seite den Body liest
     return caches.open(CACHE).then((c) => c.put(key, kopie));
   }).catch(() => {}));
@@ -41,8 +43,8 @@ async function antwort(netz, key) {
   let res;
   try {
     res = await Promise.race([netz, new Promise((r) => setTimeout(r, TIMEOUT))]);
-    if (res && res.status < 500) return res;
-  } catch (err) { /* offline */ }
+    if (res && (res.ok || res.type === 'opaqueredirect')) return res;
+  } catch (err) { /* offline */ }   // 404/5xx/Zeitüberschreitung: lieber der letzte gute Stand
   const alt = await caches.match(key, { cacheName: CACHE });
   return alt || res || netz;   // ohne Cache-Eintrag weiter aufs Netz warten
 }
