@@ -17,13 +17,19 @@
 // Manifest nur übers Netz (file:// meldet sonst einen CORS-Fehler); .app = als App vom Home-Bildschirm gestartet.
 if (/^https?:$/.test(location.protocol)) { var mf = document.createElement('link'); mf.rel = 'manifest'; mf.href = 'manifest.webmanifest'; document.head.appendChild(mf); }
 if ((window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true) document.documentElement.classList.add('app');
+// Farbschema und Akzent vor dem ersten Zeichnen setzen, sonst blitzt das Standard-Design auf.
+try {
+  var dz = JSON.parse(localStorage.getItem('kilp:design') || 'null') || {};
+  if (dz.theme === 'hell' || dz.theme === 'dunkel') document.documentElement.setAttribute('data-theme', dz.theme);
+  if (/^(blau|violett|orange|rosa)$/.test(dz.akzent)) document.documentElement.setAttribute('data-akzent', dz.akzent);
+} catch (e) { /* kein Speicher */ }
 </script>
 <style>
 :root{
   color-scheme:light dark;
   --bg:#f5f6f8;--surface:#fff;--surface-2:#eef0f3;--text:#1b1f24;--muted:#5a6270;--border:#dadee4;--track:#e3e6eb;
   --accent:#0f766e;--accent-strong:#0a5a54;--accent-soft:#e2f3f0;--on-accent:#fff;--danger:#b42318;--on-danger:#fff;
-  --radius:12px;--shadow:0 1px 2px rgb(16 24 40 / .06);
+  --radius:12px;--shadow:0 1px 2px rgb(16 24 40 / .06);--shadow-2:0 8px 24px rgb(16 24 40 / .10);
   --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   --mono:ui-monospace,SFMono-Regular,"Cascadia Mono",Menlo,Consolas,monospace;
   --unten:0px;   /* Platz für die Tab-Leiste der App */
@@ -31,10 +37,24 @@ if ((window.matchMedia && matchMedia('(display-mode: standalone)').matches) || n
 }
 html.hat-update{--update:76px}
 html{scroll-padding-bottom:calc(var(--unten) + var(--update) + env(safe-area-inset-bottom) + 8px)}
-@media (prefers-color-scheme:dark){:root{
+/* Farbschema: automatisch, oder in den Einstellungen fest auf Hell/Dunkel */
+:root[data-theme=hell]{color-scheme:light}
+:root[data-theme=dunkel]{color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=hell]){
   --bg:#0e1115;--surface:#161a20;--surface-2:#1d222a;--text:#e5e8ec;--muted:#9ba3af;--border:#2a3039;--track:#2a3039;
-  --accent:#2dd4bf;--accent-strong:#5eead4;--accent-soft:#10302c;--on-accent:#04211d;--danger:#f97066;--on-danger:#0e1115;--shadow:none;
+  --accent:#2dd4bf;--accent-strong:#5eead4;--accent-soft:#10302c;--on-accent:#04211d;--danger:#f97066;--on-danger:#0e1115;--shadow:none;--shadow-2:0 8px 24px rgb(0 0 0 / .35);
 }}
+:root[data-theme=dunkel]{
+  --bg:#0e1115;--surface:#161a20;--surface-2:#1d222a;--text:#e5e8ec;--muted:#9ba3af;--border:#2a3039;--track:#2a3039;
+  --accent:#2dd4bf;--accent-strong:#5eead4;--accent-soft:#10302c;--on-accent:#04211d;--danger:#f97066;--on-danger:#0e1115;--shadow:none;--shadow-2:0 8px 24px rgb(0 0 0 / .35);
+}
+/* Akzentfarben (Einstellungen): light-dark() wählt je nach Schema – ältere Browser bleiben bei Teal */
+@supports (color:light-dark(#000,#fff)){
+  :root[data-akzent=blau]{--accent:light-dark(#1d4ed8,#60a5fa);--accent-strong:light-dark(#1e40af,#93c5fd);--accent-soft:light-dark(#e0e7ff,#172554);--on-accent:light-dark(#fff,#0b1220)}
+  :root[data-akzent=violett]{--accent:light-dark(#6d28d9,#a78bfa);--accent-strong:light-dark(#5b21b6,#c4b5fd);--accent-soft:light-dark(#ede9fe,#2e1065);--on-accent:light-dark(#fff,#130a2b)}
+  :root[data-akzent=orange]{--accent:light-dark(#c2410c,#fb923c);--accent-strong:light-dark(#9a3412,#fdba74);--accent-soft:light-dark(#ffedd5,#431407);--on-accent:light-dark(#fff,#1c0a02)}
+  :root[data-akzent=rosa]{--accent:light-dark(#be185d,#f472b6);--accent-strong:light-dark(#9d174d,#f9a8d4);--accent-soft:light-dark(#fce7f3,#500724);--on-accent:light-dark(#fff,#1f0312)}
+}
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
 body{margin:0;padding-bottom:var(--update);background:var(--bg);color:var(--text);font:400 1rem/1.55 var(--font)}
@@ -73,10 +93,12 @@ main section[id]{scroll-margin-top:12px}
 .btn.ghost{background:transparent;border-color:transparent}
 .btn.ghost:hover{background:var(--surface-2)}
 .btn:disabled{opacity:.55;cursor:not-allowed}
+.btn.klein{min-height:2.1rem;padding:.3rem .65rem;font-size:.85rem}
+kbd{font:600 .8em var(--mono);padding:.1em .45em;border:1px solid var(--border);border-bottom-width:2px;border-radius:5px;background:var(--surface-2);white-space:nowrap}
 a,button,summary,label{-webkit-tap-highlight-color:transparent}
 .btn:not(:disabled):active{background:var(--surface-2)}
 .btn.primaer:not(:disabled):active{background:var(--accent-strong)}
-input[type=search],input[type=date],select,textarea{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.45rem .65rem;min-height:2.5rem;max-width:100%}
+input[type=search],input[type=date],input[type=time],select,textarea{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.45rem .65rem;min-height:2.5rem;max-width:100%}
 textarea{width:100%;min-height:3.4rem;resize:vertical;font-size:.95rem;line-height:1.45}
 input[type=checkbox]{accent-color:var(--accent);width:1.15rem;height:1.15rem;margin:0;flex:none}
 .reihe{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -85,13 +107,37 @@ progress::-webkit-progress-bar{background:var(--track);border-radius:999px}
 progress::-webkit-progress-value{background:var(--accent);border-radius:999px}
 progress::-moz-progress-bar{background:var(--accent);border-radius:999px}
 
+/* Lernpfad: eine Leiste, ein Segment je Phase, Breite nach Wochen */
+.pfad{margin:4px 0 16px}
+.pfad-bar{position:relative;display:flex;gap:3px;height:14px}
+.pfad-seg{position:relative;flex:1 1 0;min-width:0;margin:0;padding:0;border:0;border-radius:4px;background:var(--track);cursor:pointer;color:inherit}
+.pfad-seg::after{content:"";position:absolute;inset:-12px 0}   /* größere Trefffläche */
+.pfad-seg i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);opacity:.85;border-radius:4px 0 0 4px;transition:width .4s}
+.pfad-seg.komplett i{opacity:1;border-radius:4px}
+.pfad-seg.dran{outline:2px solid var(--text);outline-offset:1px}
+.pfad-seg.dran:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.pfad-seg:hover i{opacity:1}
+.pfad-jetzt{position:absolute;top:-5px;bottom:-5px;width:2px;margin-left:-1px;background:var(--text);border-radius:1px;pointer-events:none}
+.pfad-labels{display:flex;gap:3px;margin-top:6px}
+.pfad-labels span{flex:1 1 0;min-width:0;text-align:center;font-size:.72rem;font-weight:600;color:var(--muted);overflow:hidden;white-space:nowrap}
+
 /* Kacheln */
-.kacheln{display:grid;gap:12px;grid-template-columns:minmax(0,1fr);grid-template-areas:"next" "fort" "streak" "plan";margin:4px 0 24px}
-@media (min-width:640px){.kacheln{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"next next" "fort streak" "plan plan"}}
-@media (min-width:1000px){.kacheln{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-areas:"next next fort streak" "next next plan plan"}}
-#k-next{grid-area:next}#k-fort{grid-area:fort}#k-streak{grid-area:streak}#k-plan{grid-area:plan}
+.kacheln{display:grid;gap:12px;grid-template-columns:minmax(0,1fr);grid-template-areas:"next" "fort" "streak" "plan" "wdh";margin:4px 0 24px}
+@media (min-width:640px){.kacheln{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"next next" "fort streak" "plan wdh"}}
+@media (min-width:1000px){.kacheln{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-areas:"next next fort streak" "next next plan wdh"}}
+#k-next{grid-area:next}#k-fort{grid-area:fort}#k-streak{grid-area:streak}#k-plan{grid-area:plan}#k-wdh{grid-area:wdh}
 .kachel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);min-width:0;display:flex;flex-direction:column;gap:.5rem}
 #k-next{border-top:3px solid var(--accent)}
+.fort-kopf{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ring{width:76px;height:76px;flex:none}
+.ring circle{fill:none;stroke-width:8}
+.ring .spur{stroke:var(--track)}
+.ring .wert{stroke:var(--accent);stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .5s}
+.ring text{font:700 16px var(--font);fill:var(--text)}
+.wdh-liste{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.wdh-liste li{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.wdh-text{display:grid;min-width:0}
+.wdh-text a{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .k-label{font-size:.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .gross{font-size:2rem;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
 .gross small{font-size:1rem;font-weight:500;color:var(--muted)}
@@ -106,6 +152,46 @@ progress::-moz-progress-bar{background:var(--accent);border-radius:999px}
 .sollist{position:relative;height:.6rem;background:var(--track);border-radius:999px;margin:.3rem 0}
 .sollist .ist{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:999px}
 .sollist .soll{position:absolute;top:-5px;bottom:-5px;width:2px;margin-left:-1px;background:var(--text);border-radius:1px}
+
+/* Verlauf: Heatmap, Wochenbalken, Kennzahlen, Meilensteine */
+.verlauf{padding:0;margin:0 0 24px;scroll-margin-top:12px}
+.verlauf>summary{list-style:none;cursor:pointer;display:flex;flex-wrap:wrap;gap:.3rem 1rem;align-items:baseline;justify-content:space-between;padding:14px 16px;border-radius:var(--radius)}
+.verlauf>summary::-webkit-details-marker{display:none}
+.verlauf>summary h2{font-size:1.2rem;display:flex;align-items:center;gap:.6rem}
+.verlauf>summary h2::before{content:"";width:.5rem;height:.5rem;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .15s}
+.verlauf[open]>summary h2::before{transform:rotate(45deg)}
+.v-inhalt{padding:0 16px 16px}
+.v-grid{display:grid;gap:20px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:760px){.v-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.v-titel{font-size:.95rem;margin:0 0 .5rem}
+.heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,auto);grid-template-columns:repeat(var(--n,12),minmax(0,1fr));gap:3px;max-width:440px}
+.heat span{aspect-ratio:1;border-radius:3px;background:transparent;box-shadow:inset 0 0 0 1px var(--border)}
+.heat span.zukunft{opacity:.45}
+.heat span.l1{background:var(--accent);background:color-mix(in srgb,var(--accent) 50%,var(--surface))}
+.heat span.l2{background:var(--accent);background:color-mix(in srgb,var(--accent) 70%,var(--surface))}
+.heat span.l3{background:var(--accent);background:color-mix(in srgb,var(--accent) 85%,var(--surface))}
+.heat span.l4{background:var(--accent)}
+.heat span.l1,.heat span.l2,.heat span.l3,.heat span.l4{box-shadow:none}
+.heat span.heute{outline:1.5px solid var(--text);outline-offset:1px}
+.balken{position:relative;display:grid;grid-template-columns:repeat(var(--n,12),minmax(0,1fr));gap:4px;align-items:end;height:120px;padding-top:6px}
+.balken .b{position:relative;background:var(--accent);border-radius:4px 4px 2px 2px;min-height:2px;transition:height .4s}
+.balken .b.null{background:var(--track)}
+.balken .b.zukunft{opacity:.35}
+.balken .b.aktuell::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:2px;background:var(--text);border-radius:1px}
+.balken .soll{position:absolute;left:0;right:0;border-top:2px dashed var(--muted);pointer-events:none}
+.balken-labels{display:grid;grid-template-columns:repeat(var(--n,12),minmax(0,1fr));gap:4px;margin-top:6px;font-size:.72rem;color:var(--muted);text-align:center;font-variant-numeric:tabular-nums}
+.kennzahlen{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:18px 0}
+.kz{padding:10px 12px;border:1px solid var(--border);border-radius:10px}
+.kz b{display:block;font-size:1.3rem;line-height:1.2;font-variant-numeric:tabular-nums}
+.kz span{display:block;font-size:.8rem;color:var(--muted)}
+.ms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.ms{display:flex;gap:9px;align-items:flex-start;padding:9px 10px;border:1px solid var(--border);border-radius:10px;font-size:.85rem;color:var(--muted);min-width:0}
+.ms.an{border-color:var(--accent);color:var(--text);background:var(--accent-soft)}
+.ms-icon{flex:none;width:1.5rem;height:1.5rem;border-radius:50%;border:2px dashed var(--border);display:grid;place-items:center;font-size:.85rem;font-weight:700}
+.ms.an .ms-icon{border:2px solid var(--accent);background:var(--accent);color:var(--on-accent)}
+.ms b{display:block;font-size:.88rem;font-weight:500}
+.ms.an b{font-weight:600}
+.ms div{min-width:0}
 
 /* Spalten */
 .spalten{display:grid;gap:24px;grid-template-columns:minmax(0,1fr);padding-bottom:40px}
@@ -126,7 +212,7 @@ progress::-moz-progress-bar{background:var(--accent);border-radius:999px}
 .leer{padding:16px;border:1px dashed var(--border);border-radius:10px;color:var(--muted)}
 
 /* Phasen */
-.phase{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;box-shadow:var(--shadow)}
+.phase{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;box-shadow:var(--shadow);scroll-margin-top:12px}
 .phase>summary{list-style:none;cursor:pointer;padding:14px 16px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 10px;align-items:center;border-radius:var(--radius)}
 .phase>summary::-webkit-details-marker{display:none}
 .phase>summary::before{content:"";width:.5rem;height:.5rem;margin:0 .3rem;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .15s}
@@ -145,7 +231,8 @@ progress::-moz-progress-bar{background:var(--accent);border-radius:999px}
 .modul-liste{display:grid;gap:10px}
 
 /* Modulkarte */
-.modul{border:1px solid var(--border);border-left:4px solid var(--border);border-radius:10px;padding:14px;background:var(--surface);scroll-margin-top:16px;min-width:0}
+.modul{border:1px solid var(--border);border-left:4px solid var(--border);border-radius:10px;padding:14px;background:var(--surface);scroll-margin-top:16px;min-width:0;transition:box-shadow .15s}
+.modul:hover{box-shadow:var(--shadow-2)}
 .modul[data-status=erledigt]{border-left-color:var(--accent)}
 .modul[data-status=begonnen]{border-left-color:var(--accent);border-left-style:dashed}
 .m-kopf{display:flex;flex-wrap:wrap;align-items:baseline;gap:.3rem .6rem}
@@ -165,6 +252,7 @@ progress::-moz-progress-bar{background:var(--accent);border-radius:999px}
 a[target=_blank]::after{content:"\00a0\2197";content:"\00a0\2197"/"";font-size:.85em}
 .m-log{margin-top:.6rem;font-size:.85rem;color:var(--muted)}
 .m-fuss{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:center;justify-content:space-between;margin-top:.85rem;padding-top:.75rem;border-top:1px solid var(--border)}
+.m-aktionen{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .check{display:inline-flex;align-items:center;gap:.5rem;cursor:pointer;min-height:2.5rem}
 .check:has(input:disabled){cursor:default}
 .cb-hinweis{font-size:.82rem;color:var(--muted)}
@@ -194,6 +282,18 @@ dialog::backdrop{background:rgb(10 12 16 / .5)}
 #frage form{padding:20px;display:grid;gap:12px}
 #frage h2{font-size:1.15rem}
 .ende{justify-content:flex-end}
+.swatches{display:flex;gap:10px;margin:0;padding:0;border:0}
+.swatches label{position:relative;width:2rem;height:2rem;border-radius:50%;cursor:pointer}
+.swatches input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.swatches span{display:block;width:100%;height:100%;border-radius:50%;background:var(--farbe);box-shadow:inset 0 0 0 2px rgb(255 255 255 / .55),0 0 0 1px var(--muted)}
+@supports not (color:light-dark(#000,#fff)){.swatches{display:none}}   /* alte Browser können die Akzente nicht umsetzen */
+.swatches input:checked+span{outline:3px solid var(--text);outline-offset:2px}
+.swatches input:focus-visible+span{outline:3px solid var(--accent);outline-offset:2px}
+.kal-tage{margin:0;padding:0;border:0;display:flex;flex-wrap:wrap;gap:6px 14px}
+.kal-tage label{display:inline-flex;align-items:center;gap:.35rem;cursor:pointer;min-height:2rem}
+.kuerzel{display:grid;grid-template-columns:auto 1fr;gap:.5rem 1rem;margin:16px 0 4px;align-items:center}
+.kuerzel dt{text-align:right}
+.kuerzel dd{margin:0}
 
 /* Toast */
 .toast{position:fixed;left:50%;bottom:calc(16px + var(--unten) + var(--update) + env(safe-area-inset-bottom));z-index:30;width:max-content;max-width:calc(100% - 32px);padding:.65rem 1rem;border-radius:10px;background:var(--text);color:var(--bg);font-size:.95rem;box-shadow:0 8px 24px rgb(0 0 0 / .2);transform:translate(-50%,160%);opacity:0;transition:transform .2s,opacity .2s;pointer-events:none}
@@ -204,6 +304,17 @@ dialog::backdrop{background:rgb(10 12 16 / .5)}
 .update{position:fixed;left:50%;bottom:calc(16px + var(--unten) + env(safe-area-inset-bottom));z-index:29;transform:translateX(-50%);display:flex;align-items:center;gap:12px;width:max-content;max-width:calc(100% - 32px);padding:8px 8px 8px 16px;border-radius:12px;background:var(--text);color:var(--bg);font-size:.95rem;box-shadow:0 8px 24px rgb(0 0 0 / .2)}
 .update .btn{min-height:2.5rem}
 .update :focus-visible{outline-color:var(--bg)}
+
+/* Fokus-Timer (schwebend, solange er läuft) */
+.fokus{position:fixed;top:max(12px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));z-index:28;display:flex;align-items:center;gap:8px;padding:6px 6px 6px 14px;border-radius:999px;background:var(--text);color:var(--bg);box-shadow:0 8px 24px rgb(0 0 0 / .25);font-variant-numeric:tabular-nums}
+.fokus strong{font-size:1.05rem}
+.fokus #f-id{white-space:nowrap}
+.fokus .btn{min-height:2.1rem;padding:.3rem .7rem;background:transparent;color:inherit;border-color:currentColor;opacity:.9}
+.fokus .btn:hover{background:rgb(128 128 128 / .25);opacity:1}
+.fokus :focus-visible{outline-color:var(--bg)}
+html.fokus-an .top{padding-top:72px}   /* Kopfzeile unter die Pille schieben */
+@media (max-width:640px){.fokus{left:50%;right:auto;transform:translateX(-50%);max-width:calc(100% - 32px)}}
+.konfetti{position:fixed;inset:0;z-index:40;pointer-events:none}
 
 /* Tab-Leiste – nur in der App (Home-Bildschirm) auf schmalen Displays */
 .tabbar{display:none}
@@ -222,6 +333,7 @@ dialog::backdrop{background:rgb(10 12 16 / .5)}
 /* Touch: größere Ziele, 16px in Eingabefeldern (sonst zoomt iOS beim Tippen) */
 @media (pointer:coarse){
   .btn{min-height:2.75rem}
+  .fokus .btn{min-height:2.5rem}
   textarea{font-size:1rem}
   .top nav a{padding:.6rem .7rem}
   .seg span{padding:.55rem .85rem}
@@ -231,7 +343,9 @@ dialog::backdrop{background:rgb(10 12 16 / .5)}
 @media (forced-colors:active){
   .seg input:checked+span{forced-color-adjust:none;background:Highlight;color:HighlightText}
   .tage span{border:1px solid CanvasText}
-  .tage span.an,.sollist .ist{forced-color-adjust:none;background:Highlight}
+  .tage span.an,.sollist .ist,.heat span.l1,.heat span.l2,.heat span.l3,.heat span.l4,.balken .b,.pfad-seg i{forced-color-adjust:none;background:Highlight}
+  .heat span,.balken .b,.pfad-seg{border:1px solid CanvasText}
+  .ring .wert{stroke:Highlight}
   .sollist{border:1px solid CanvasText}
   .sollist .soll{forced-color-adjust:none;background:CanvasText}
   progress{forced-color-adjust:none;border:1px solid CanvasText;background:Canvas}
@@ -258,16 +372,55 @@ dialog::backdrop{background:rgb(10 12 16 / .5)}
   </nav>
 </header>
 
+<div id="fokus" class="fokus" role="timer" aria-label="Fokus-Timer" hidden>
+  <span id="f-id" class="klein"></span>
+  <strong id="f-zeit">25:00</strong>
+  <button type="button" class="btn" id="f-pause">Pause</button>
+  <button type="button" class="btn" id="f-stopp">Stopp</button>
+</div>
+
 <div class="wrap" id="banner-box"></div>
 <noscript><div class="wrap"><p class="banner">Dieses Dashboard braucht JavaScript.</p></div></noscript>
 
 <main class="wrap">
+  <section id="lernpfad" class="pfad" aria-label="Lernpfad – Phasen im Überblick"></section>
   <section class="kacheln" id="ueberblick" aria-label="Überblick">
     <article class="kachel" id="k-next"></article>
     <article class="kachel" id="k-fort"></article>
     <article class="kachel" id="k-streak"></article>
     <article class="kachel" id="k-plan"></article>
+    <article class="kachel" id="k-wdh"></article>
   </section>
+
+  <details class="panel verlauf" id="verlauf">
+    <summary>
+      <h2 id="h-verlauf">Verlauf &amp; Meilensteine</h2>
+      <span id="v-kurz" class="muted klein"></span>
+    </summary>
+    <div class="v-inhalt">
+      <div class="v-grid">
+        <div>
+          <h3 class="v-titel">Aktivität</h3>
+          <div id="heat" class="heat" role="img"></div>
+          <p id="heat-text" class="muted klein" style="margin-top:.5rem"></p>
+        </div>
+        <div>
+          <h3 class="v-titel">Modulstunden pro Woche</h3>
+          <div id="balken" class="balken" role="img"></div>
+          <div id="balken-labels" class="balken-labels" aria-hidden="true"></div>
+          <p id="balken-text" class="muted klein" style="margin-top:.5rem"></p>
+        </div>
+      </div>
+      <div id="kennzahlen" class="kennzahlen"></div>
+      <h3 class="v-titel">Meilensteine <span id="ms-zahl" class="muted klein" style="font-weight:400"></span></h3>
+      <div id="meilensteine" class="ms-grid"></div>
+      <div class="reihe" style="margin-top:16px">
+        <button type="button" class="btn" id="bericht">Bericht für Claude kopieren</button>
+        <button type="button" class="btn" id="bild">Fortschritt als Bild</button>
+      </div>
+      <p class="muted klein" style="margin-top:.5rem">Der Bericht fasst Stand, Lücken und fällige Wiederholungen zusammen – in Claude einfügen und nach einem Plan für die nächste Woche fragen.</p>
+    </div>
+  </details>
 
   <div class="spalten">
     <section id="plan" aria-labelledby="h-plan">
@@ -346,17 +499,85 @@ dialog::backdrop{background:rgb(10 12 16 / .5)}
       </div>
     </section>
     <section>
+      <h3>Darstellung</h3>
+      <div class="reihe">
+        <fieldset class="seg">
+          <legend class="sr-only">Farbschema</legend>
+          <label><input type="radio" name="theme" value="system" checked><span>System</span></label>
+          <label><input type="radio" name="theme" value="hell"><span>Hell</span></label>
+          <label><input type="radio" name="theme" value="dunkel"><span>Dunkel</span></label>
+        </fieldset>
+        <fieldset class="swatches">
+          <legend class="sr-only">Akzentfarbe</legend>
+          <label style="--farbe:#0f766e"><input type="radio" name="akzent" value="teal" checked aria-label="Akzent Teal"><span></span></label>
+          <label style="--farbe:#1d4ed8"><input type="radio" name="akzent" value="blau" aria-label="Akzent Blau"><span></span></label>
+          <label style="--farbe:#6d28d9"><input type="radio" name="akzent" value="violett" aria-label="Akzent Violett"><span></span></label>
+          <label style="--farbe:#c2410c"><input type="radio" name="akzent" value="orange" aria-label="Akzent Orange"><span></span></label>
+          <label style="--farbe:#be185d"><input type="radio" name="akzent" value="rosa" aria-label="Akzent Rosa"><span></span></label>
+        </fieldset>
+      </div>
+    </section>
+    <section>
+      <h3>Fokus-Timer</h3>
+      <label for="fokus-dauer" class="muted klein">Länge einer Fokus-Session. Am Ende ertönt ein Signal, die Zeit landet im Verlauf und im Lernjournal.</label>
+      <div class="reihe">
+        <select id="fokus-dauer">
+          <option value="15">15 Minuten</option>
+          <option value="25" selected>25 Minuten</option>
+          <option value="45">45 Minuten</option>
+          <option value="60">60 Minuten</option>
+          <option value="0">Offen – manuell stoppen</option>
+        </select>
+      </div>
+    </section>
+    <section>
+      <h3>Lernzeiten im Kalender</h3>
+      <p class="muted klein">Erzeugt eine Kalenderdatei (.ics) mit wiederkehrenden Lernterminen bis zum Plan-Ende, inklusive Erinnerung – zum Öffnen in Apple Kalender, Outlook oder Google Kalender.</p>
+      <fieldset class="kal-tage" id="kal-tage">
+        <legend class="sr-only">Wochentage</legend>
+        <label><input type="checkbox" value="MO" checked><span>Mo</span></label>
+        <label><input type="checkbox" value="TU"><span>Di</span></label>
+        <label><input type="checkbox" value="WE" checked><span>Mi</span></label>
+        <label><input type="checkbox" value="TH"><span>Do</span></label>
+        <label><input type="checkbox" value="FR" checked><span>Fr</span></label>
+        <label><input type="checkbox" value="SA"><span>Sa</span></label>
+        <label><input type="checkbox" value="SU"><span>So</span></label>
+      </fieldset>
+      <div class="reihe">
+        <label class="klein" for="kal-uhr">Uhrzeit</label>
+        <input type="time" id="kal-uhr" value="19:00">
+        <label class="klein" for="kal-dauer">Dauer</label>
+        <select id="kal-dauer">
+          <option value="30">30 min</option>
+          <option value="45" selected>45 min</option>
+          <option value="60">60 min</option>
+          <option value="90">90 min</option>
+        </select>
+        <button type="button" class="btn" id="kal-btn">Kalenderdatei erzeugen</button>
+      </div>
+    </section>
+    <section>
       <h3>Sicherung &amp; Abgleich</h3>
-      <p class="muted klein">Häkchen, Notizen und Startdatum liegen nur auf diesem Gerät. Zum Abgleich zwischen PC und iPhone: hier exportieren, auf dem anderen Gerät importieren und „Zusammenführen“ wählen. Lernjournal und News stehen in <code>data/*.js</code>.</p>
+      <p class="muted klein">Häkchen, Notizen, Fokuszeiten, Meilensteine und Startdatum liegen nur auf diesem Gerät. Zum Abgleich zwischen PC und iPhone: hier exportieren, auf dem anderen Gerät importieren und „Zusammenführen“ wählen. Lernjournal und News stehen in <code>data/*.js</code>.</p>
       <div class="reihe">
         <button type="button" class="btn" id="export">Als JSON exportieren</button>
         <button type="button" class="btn" id="import-btn">JSON importieren …</button>
+        <button type="button" class="btn ghost" id="notizen-md">Notizen als Markdown</button>
         <input type="file" id="import" accept=".json,application/json" hidden>
       </div>
     </section>
     <section>
+      <h3>App &amp; Tastatur</h3>
+      <p class="muted klein">Auf dem iPhone: in Safari „Teilen“ → „Zum Home-Bildschirm“. Am PC: <kbd>/</kbd> suchen · <kbd>n</kbd> nächstes Modul · <kbd>f</kbd> Fokus-Timer · <kbd>?</kbd> Übersicht.</p>
+      <div class="reihe">
+        <label class="check"><input type="checkbox" id="kuerzel-an" checked> <span>Tastenkürzel aktiv</span></label>
+        <button type="button" class="btn" id="install" hidden>Als App installieren</button>
+        <button type="button" class="btn ghost" id="hilfe-btn">Tastenkürzel anzeigen</button>
+      </div>
+    </section>
+    <section>
       <h3>Zurücksetzen</h3>
-      <p class="muted klein">Löscht alle Häkchen, Notizen und das Startdatum auf diesem Gerät. Die Dateien in <code>data/</code> bleiben unverändert.</p>
+      <p class="muted klein">Löscht Häkchen, Notizen, Fokuszeiten, Meilensteine und das Startdatum auf diesem Gerät. Darstellung und Kalender-Vorgaben bleiben, die Dateien in <code>data/</code> ebenfalls.</p>
       <div class="reihe"><button type="button" class="btn" id="reset">Alles zurücksetzen …</button></div>
     </section>
     <p id="einst-status" class="dlg-status" role="status" aria-live="polite"></p>
@@ -373,6 +594,23 @@ dialog::backdrop{background:rgb(10 12 16 / .5)}
       <button class="btn gefahr" value="ja" id="frage-ok">OK</button>
     </div>
   </form>
+</dialog>
+
+<dialog id="hilfe" aria-labelledby="hilfe-titel">
+  <form method="dialog" class="dlg-kopf">
+    <h2 id="hilfe-titel">Tastenkürzel</h2>
+    <button class="btn ghost" value="zu" aria-label="Tastenkürzel schließen">✕</button>
+  </form>
+  <div class="dlg-inhalt">
+    <dl class="kuerzel">
+      <dt><kbd>/</kbd></dt><dd>Module durchsuchen</dd>
+      <dt><kbd>n</kbd></dt><dd>Zum nächsten Modul springen</dd>
+      <dt><kbd>f</kbd></dt><dd>Fokus-Timer fürs nächste Modul starten oder beenden</dd>
+      <dt><kbd>?</kbd></dt><dd>Diese Übersicht</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Dialog schließen</dd>
+    </dl>
+    <p class="muted klein" style="padding-bottom:8px">Die Kürzel wirken nicht, während du in ein Feld tippst.</p>
+  </div>
 </dialog>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -439,6 +677,21 @@ const slug = (id) => txt(id).replace(/[^A-Za-z0-9_-]/g, '-');
 const sichereUrl = (u) => /^https?:\/\//i.test(txt(u));
 const summe = (liste) => liste.reduce((s, m) => s + m.std, 0);
 const bewegungReduziert = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fmtKurz = (s) => zuDate(s).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+const fmtStd = (min) => (min < 60 ? min + ' min' : fmtZahl(min / 60) + ' Std.');
+const quizQuote = (q) => { const t = /(\d+)\s*\/\s*(\d+)/.exec(txt(q)); return t && Number(t[2]) > 0 ? Math.min(Number(t[1]) / Number(t[2]), 1) : null; };
+const imNetz = /^https?:$/.test(location.protocol);
+const istApp = document.documentElement.classList.contains('app');
+const istTouch = () => window.matchMedia && matchMedia('(pointer: coarse)').matches;
+const NS = 'http://www.w3.org/2000/svg';
+function svg(tag, attrs, ...kinder) {
+  const n = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) n.setAttribute(k, v);
+  for (const c of kinder) n.append(c instanceof Node ? c : String(c));
+  return n;
+}
+// Akzentfarben (hell: Akzent, kräftig) – fürs Fortschrittsbild und Konfetti, das CSS hat seine eigene Tabelle
+const AKZENTE = { teal: ['#0f766e', '#0a5a54'], blau: ['#1d4ed8', '#1e40af'], violett: ['#6d28d9', '#5b21b6'], orange: ['#c2410c', '#9a3412'], rosa: ['#be185d', '#9d174d'] };
 
 /* ---------- localStorage (jeder Zugriff in try/catch) ---------- */
 const store = {
@@ -451,12 +704,26 @@ const nurObjekt = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : 
 function saubereHaken(v) { const r = {}; for (const [id, d] of Object.entries(nurObjekt(v))) if (istDatum(d)) r[id] = d; return r; }
 function saubereNotizen(v) { const r = {}; for (const [id, t] of Object.entries(nurObjekt(v))) if (typeof t === 'string' && t.trim()) r[id] = t; return r; }
 
-let haken = {}, notizen = {}, start = '';
+function saubereZeit(v) {
+  return (Array.isArray(v) ? v : [])
+    .filter((s) => s && typeof s === 'object' && istDatum(s.d) && Number(s.min) >= 1)
+    .map((s) => ({ t: Number(s.t) || 0, d: s.d, id: txt(s.id), min: Math.round(Number(s.min)) }))
+    .sort((a, b) => a.t - b.t);
+}
+const FOKUS_DAUERN = [0, 15, 25, 45, 60];
+let haken = {}, notizen = {}, start = '', zeit = [], meilensteine = {}, design = {}, kalenderPref = {}, fokusDauer = 25, ui = {};
 function ladeZustand() {
   haken = saubereHaken(store.get('done', {}));
   notizen = saubereNotizen(store.get('notes', {}));
   const s = store.get('start', '');
   start = plausibel(s) ? s : '';
+  zeit = saubereZeit(store.get('zeit', []));
+  meilensteine = saubereHaken(store.get('meilensteine', {}));   // gleiche Form: {id: Datum}
+  design = nurObjekt(store.get('design', {}));
+  kalenderPref = nurObjekt(store.get('kalender', {}));
+  ui = nurObjekt(store.get('ui', {}));
+  const fd = Number(store.get('fokus-dauer', 25));
+  fokusDauer = FOKUS_DAUERN.includes(fd) ? fd : 25;
 }
 function speichereStart() { return start ? store.set('start', start) : store.weg('start'); }
 
@@ -503,17 +770,57 @@ function wochenSpanne(w) {
   const a = Number(t[1]);
   return [a, t[3] ? Infinity : t[2] ? Number(t[2]) : a];
 }
+// Woche und Soll laut Startdatum; soll = null ohne Start oder vor dem Start.
+function planZahlen() {
+  if (!start) return { soll: null, woche: 0, tage: -1, anteil: 0 };
+  const tage = tageZwischen(start, heute());
+  if (tage < 0) return { soll: null, woche: 0, tage, anteil: 0 };
+  const anteil = Math.min(tage + 1, PLAN_WOCHEN * 7) / (PLAN_WOCHEN * 7);
+  return { soll: Math.round(gesamtStd * anteil), woche: Math.floor(tage / 7) + 1, tage, anteil };
+}
+function fertigDatum(id) {
+  if (haken[id]) return haken[id];
+  const e = (logProModul.get(id) || []).find((x) => (x.fertig === true || x.fertig === 'true') && istDatum(x.d));
+  return e ? e.d : '';
+}
+// Aktive Tage: Journal, Häkchen und Fokus-Sessions; Serie = Tage in Folge bis heute oder gestern.
+function aktivitaet() {
+  const aktiv = new Set([...log.map((e) => e.d), ...Object.values(haken), ...zeit.map((s) => s.d)].filter(istDatum));
+  const h = heute();
+  let tag = aktiv.has(h) ? h : plusTage(h, -1), serie = 0;
+  while (aktiv.has(tag)) { serie++; tag = plusTage(tag, -1); }
+  return { aktiv, serie, h };
+}
+// Zeitraster für Verlauf: ab Startdatum (mind. 12 Wochen), sonst die letzten 12 Wochen bis heute.
+function wochenBasis() {
+  const h = heute();
+  if (start && tageZwischen(start, h) >= 0) {
+    const aktuell = Math.floor(tageZwischen(start, h) / 7);
+    return { basis: start, n: Math.max(PLAN_WOCHEN, aktuell + 1), aktuell };
+  }
+  return { basis: plusTage(h, -(PLAN_WOCHEN * 7 - 1)), n: PLAN_WOCHEN, aktuell: PLAN_WOCHEN - 1 };
+}
+const wocheVon = (basis, d) => Math.floor(tageZwischen(basis, d) / 7);
 
 /* ---------- Meldungen ---------- */
-let toastTimer;
+// Toasts laufen nacheinander, damit „Modul erledigt“, „Phase komplett“ und ein Meilenstein sich nicht überschreiben.
+let toastTimer = 0;
+const toastSchlange = [];
 function melde(text) {
   const dlg = $('#einst');
   if (dlg.open) { $('#einst-status').textContent = text; return; }
+  toastSchlange.push(text);
+  if (!toastTimer) naechsterToast();
+}
+function naechsterToast() {
   const t = $('#toast');
-  t.textContent = '';
-  requestAnimationFrame(() => { t.textContent = text; t.classList.add('zeigen'); });
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('zeigen'), 2800);
+  if (!toastSchlange.length) { t.classList.remove('zeigen'); toastTimer = 0; return; }
+  const text = toastSchlange.shift();
+  t.classList.remove('zeigen');
+  t.textContent = text;
+  void t.offsetWidth;   // Neustart der Einblend-Animation (kein rAF – das pausiert im Hintergrund, der Timer nicht)
+  t.classList.add('zeigen');
+  toastTimer = setTimeout(() => { t.classList.remove('zeigen'); toastTimer = setTimeout(naechsterToast, toastSchlange.length ? 250 : 0); }, toastSchlange.length ? 2200 : 2800);
 }
 function banner(zeilen) {
   $('#banner-box').append(el('div', { class: 'banner', role: 'alert' }, zeilen.map((z) => el('p', null, z))));
@@ -539,22 +846,44 @@ async function kopiere(text) {
     return false;
   }
 }
-function sessionButton(id, primaer) {
-  const befehl = '/lern-session ' + id;
-  const lbl = el('span', { text: 'Session kopieren' });
-  const b = el('button', { type: 'button', class: primaer ? 'btn primaer' : 'btn', title: 'Kopiert „' + befehl + '“' },
-    lbl, el('span', { class: 'sr-only', text: ' für Modul ' + id }));
+// modus: '' (normal) oder 'quiz'/'kurz' – Modi des Skills /lern-session
+function sessionButton(id, primaer, modus, klein) {
+  const befehl = '/lern-session ' + id + (modus ? ' ' + modus : '');
+  const text = modus === 'quiz' ? 'Quiz' : modus === 'kurz' ? 'Kurz' : 'Session kopieren';
+  const lbl = el('span', { text });
+  const b = el('button', { type: 'button', class: 'btn' + (primaer ? ' primaer' : '') + (klein ? ' klein' : ''), title: 'Kopiert „' + befehl + '“' },
+    lbl, el('span', { class: 'sr-only', text: (modus ? ' kopieren' : '') + ' für Modul ' + id }));
   b.addEventListener('click', async () => {
     if (await kopiere(befehl)) {
       lbl.textContent = 'Kopiert ✓';
       clearTimeout(b._t);
-      b._t = setTimeout(() => { lbl.textContent = 'Session kopieren'; }, 1600);
+      b._t = setTimeout(() => { lbl.textContent = text; }, 1600);
       melde('Kopiert: ' + befehl + ' – in Claude Code einfügen');
     } else {
       window.prompt('Befehl zum Kopieren:', befehl);
     }
   });
   return b;
+}
+// Fokus-Buttons zeigen Dauer bzw. „beenden“, deshalb werden sie zentral beschriftet.
+const fokusButtons = new Set();
+function fokusButton(id, klein) {
+  const lbl = el('span');
+  const b = el('button', { type: 'button', class: 'btn' + (klein ? ' klein' : '') }, lbl, el('span', { class: 'sr-only', text: ' – Modul ' + id }));
+  b._id = id; b._lbl = lbl;
+  b.addEventListener('click', () => {
+    if (fokus.zustand && fokus.zustand.id === id) fokusStopp(false);
+    else if (fokus.zustand) melde('Es läuft schon ein Fokus-Timer für Modul ' + fokus.zustand.id + '.');
+    else fokusStart(id);
+  });
+  fokusButtons.add(b);
+  beschrifteFokus(b);
+  return b;
+}
+function beschrifteFokus(b) {
+  const laeuft = fokus.zustand && fokus.zustand.id === b._id;
+  b._lbl.textContent = laeuft ? 'Fokus beenden' : 'Fokus ' + (fokusDauer ? fokusDauer + ' min' : 'starten');
+  b.title = laeuft ? 'Fokus-Timer beenden' : 'Fokus-Timer für Modul ' + b._id + ' starten';
 }
 
 /* ---------- Plan aufbauen (einmalig) ---------- */
@@ -577,10 +906,10 @@ function baueKarte(m, g) {
     if (cb.checked) haken[id] = heute(); else delete haken[id];
     const ok = store.set('done', haken);
     const hatteFokus = karte.contains(document.activeElement);
-    aktualisiere();
-    if (hatteFokus && karte.hidden) fokusNachAusblenden(id);
     melde(!ok ? 'Speichern fehlgeschlagen – der Browser-Speicher ist nicht verfügbar.'
       : cb.checked ? 'Modul ' + id + ' erledigt' : 'Haken bei Modul ' + id + ' entfernt');
+    aktualisiere();   // meldet danach ggf. „Phase komplett“ und Meilensteine
+    if (hatteFokus && karte.hidden) fokusNachAusblenden(id);
   });
   const ta = el('textarea', { id: 'no-' + sid, rows: '2', placeholder: 'Gedanken, offene Fragen, Links …' });
   ta.value = notizen[id] || '';
@@ -602,6 +931,7 @@ function baueKarte(m, g) {
     el('span', { class: 'muted klein', text: ' · ' + fmtDatum(n.d) })));
   const eintraege = logProModul.get(id) || [];
   const letzter = eintraege[eintraege.length - 1];
+  const fokusZeile = el('p', { class: 'm-log', hidden: true });
 
   const karte = el('article', { class: 'modul', id: 'm-' + sid, 'aria-labelledby': 't-' + sid },
     el('div', { class: 'm-kopf' }, el('span', { class: 'm-id', text: id }), titel, badge, el('span', { class: 'm-std', text: fmtZahl(m.std) + ' Std.' })),
@@ -611,14 +941,15 @@ function baueKarte(m, g) {
     passendeNews.length ? el('div', { class: 'm-block' }, el('span', { class: 'm-label', text: 'Passende News' }), el('ul', { class: 'm-news' }, passendeNews)) : null,
     letzter ? el('p', { class: 'm-log' }, 'Journal: ' + eintraege.length + (eintraege.length === 1 ? ' Eintrag' : ' Einträge') + ' · zuletzt ' + fmtDatum(letzter.d)
       + (letzter.quiz ? ' · Quiz ' + txt(letzter.quiz) : '')) : null,
+    fokusZeile,
     el('div', { class: 'm-block' }, el('label', { class: 'm-label', for: 'no-' + sid }, 'Notizen', el('span', { class: 'sr-only', text: ' zu Modul ' + id })), ta),
     el('div', { class: 'm-fuss' },
       el('label', { class: 'check', for: 'cb-' + sid }, cb, el('span', null, 'Erledigt', el('span', { class: 'sr-only', text: ' – Modul ' + id })), cbHinweis),
-      sessionButton(id, false)));
+      el('div', { class: 'm-aktionen' }, fokusButton(id, true), sessionButton(id, false, 'quiz', true), sessionButton(id, false))));
 
   const suchtext = [id, m.titel, m.ziel, m.aufgabe, (Array.isArray(m.quellen) ? m.quellen : []).map((q) => (Array.isArray(q) ? q[0] : q && q.name))]
     .flat().map(txt).join(' ').toLowerCase();
-  karten.set(id, { m, g, karte, titel, badge, cb, cbHinweis, ta, suchtext });
+  karten.set(id, { m, g, karte, titel, badge, cb, cbHinweis, ta, suchtext, fokusZeile });
   return karte;
 }
 
@@ -700,7 +1031,7 @@ function renderNaechstes(st) {
         st.get(m.id) === 'begonnen' ? el('span', { class: 'badge begonnen', text: 'begonnen' }) : null),
       el('h3', { class: 'next-titel', text: txt(m.titel) }),
       m.ziel ? el('p', { class: 'next-ziel', text: txt(m.ziel) }) : null,
-      el('div', { class: 'reihe' }, sessionButton(m.id, true),
+      el('div', { class: 'reihe' }, sessionButton(m.id, true), fokusButton(m.id, false),
         el('button', { type: 'button', class: 'btn', onclick: () => zeigeModul(m.id) }, 'Zum Modul')),
       el('p', { class: 'muted klein' }, 'Kopiert ', el('code', { text: '/lern-session ' + m.id }), ' – in Claude Code einfügen.'));
     return teile;
@@ -708,38 +1039,119 @@ function renderNaechstes(st) {
   return m;
 }
 
+function ring(pct) {
+  const r = 30, u = 2 * Math.PI * r;
+  return svg('svg', { class: 'ring', viewBox: '0 0 76 76', role: 'img', 'aria-label': Math.round(pct) + ' % der Stunden erledigt' },
+    svg('circle', { class: 'spur', cx: 38, cy: 38, r }),
+    svg('circle', { class: 'wert', cx: 38, cy: 38, r, 'stroke-dasharray': u.toFixed(2), 'stroke-dashoffset': (u * (1 - Math.min(pct, 100) / 100)).toFixed(2) }),
+    svg('text', { x: 38, y: 38, 'text-anchor': 'middle', 'dominant-baseline': 'central' }, Math.round(pct) + ' %'));
+}
 function renderFortschritt(st) {
   const fertig = reihenfolge.filter((m) => st.get(m.id) === 'erledigt');
   const begonnen = reihenfolge.filter((m) => st.get(m.id) === 'begonnen').length;
   const stdFertig = summe(fertig), n = reihenfolge.length;
-  const pct = gesamtStd ? Math.round((stdFertig / gesamtStd) * 100) : 0;
+  const pct = gesamtStd ? (stdFertig / gesamtStd) * 100 : 0;
   setze($('#k-fort'), [fertig.length, begonnen, stdFertig].join('|'), () => [
     el('h2', { class: 'k-label', text: 'Fortschritt' }),
-    el('p', { class: 'gross' }, String(fertig.length), el('small', { text: ' / ' + n + ' Module' })),
-    el('progress', { max: String(Math.max(n, 1)), value: String(fertig.length), 'aria-label': fertig.length + ' von ' + n + ' Modulen erledigt' }),
-    el('p', null, el('strong', { text: fmtZahl(stdFertig) }), ' / ' + fmtZahl(gesamtStd) + ' Std. · ' + pct + ' %'),
-    el('progress', { max: String(Math.max(gesamtStd, 1)), value: String(stdFertig), 'aria-label': fmtZahl(stdFertig) + ' von ' + fmtZahl(gesamtStd) + ' Stunden erledigt' }),
-    begonnen ? el('p', { class: 'muted klein', text: begonnen + (begonnen === 1 ? ' Modul begonnen' : ' Module begonnen') }) : null,
+    el('div', { class: 'fort-kopf' },
+      el('div', null,
+        el('p', { class: 'gross' }, String(fertig.length), el('small', { text: ' / ' + n + ' Module' })),
+        el('p', null, el('strong', { text: fmtZahl(stdFertig) }), ' / ' + fmtZahl(gesamtStd) + ' Std.')),
+      ring(pct)),
+    el('p', { class: 'muted klein', text: (begonnen ? begonnen + (begonnen === 1 ? ' Modul begonnen · ' : ' Module begonnen · ') : '') + (n - fertig.length) + ' offen' }),
   ]);
 }
 
-function renderStreak() {
-  const aktiv = new Set([...log.map((e) => e.d), ...Object.values(haken)].filter(istDatum));
-  const h = heute();
-  let tag = aktiv.has(h) ? h : plusTage(h, -1), serie = 0;
-  while (aktiv.has(tag)) { serie++; tag = plusTage(tag, -1); }
+function renderStreak(akt) {
+  const { aktiv, serie, h } = akt;
   const letzte14 = Array.from({ length: 14 }, (_, i) => plusTage(h, i - 13));
   const anzahl14 = letzte14.filter((d) => aktiv.has(d)).length;
   const zuletzt = [...aktiv].sort().pop();
-  setze($('#k-streak'), [h, ...[...aktiv].sort()].join('|'), () => [
+  const heuteMin = zeit.filter((s) => s.d === h).reduce((a, s) => a + s.min, 0);
+  setze($('#k-streak'), [h, heuteMin, ...[...aktiv].sort()].join('|'), () => [
     el('h2', { class: 'k-label', text: 'Streak' }),
     el('p', { class: 'gross' }, String(serie), el('small', { text: serie === 1 ? ' Tag' : ' Tage' })),
     el('div', { class: 'tage', role: 'img', 'aria-label': 'Letzte 14 Tage: an ' + anzahl14 + ' Tagen aktiv' },
       letzte14.map((d) => el('span', { class: (aktiv.has(d) ? 'an' : '') + (d === h ? ' heute' : ''), title: fmtDatum(d) + (aktiv.has(d) ? ' – aktiv' : '') }))),
-    el('p', { class: 'muted klein', text: aktiv.has(h) ? 'Heute schon aktiv.'
+    el('p', { class: 'muted klein', text: aktiv.has(h) ? 'Heute schon aktiv' + (heuteMin ? ' · ' + fmtStd(heuteMin) + ' Fokus' : '') + '.'
       : serie ? 'Heute noch nichts – eine kurze Session hält die Serie.' : 'Starte heute eine neue Serie.' }),
     el('p', { class: 'muted klein', text: aktiv.size + (aktiv.size === 1 ? ' aktiver Tag' : ' aktive Tage') + ' insgesamt' + (zuletzt ? ' · zuletzt ' + fmtDatum(zuletzt) : '') }),
   ]);
+}
+
+/* ---------- Lernpfad ---------- */
+function renderLernpfad(st, pz) {
+  const box = $('#lernpfad');
+  const echte = gruppen.filter((g) => g.ph.id !== '–');
+  box.hidden = !echte.length;
+  if (!echte.length) return;
+  const spannen = echte.map((g) => wochenSpanne(g.ph.wochen));
+  const alleSpannen = spannen.every(Boolean);
+  const ende = Math.max(PLAN_WOCHEN, ...spannen.filter(Boolean).map((s) => (s[1] === Infinity ? s[0] : s[1])));
+  const breiten = spannen.map((s) => (s ? Math.max(1, (s[1] === Infinity ? ende : s[1]) - s[0] + 1) : 1));
+  const fort = echte.map((g) => (g.module.length ? g.module.filter((m) => st.get(m.id) === 'erledigt').length / g.module.length : 0));
+  const woche = pz.woche;
+  setze(box, [fort.map((f) => f.toFixed(3)).join(','), woche, breiten.join(',')].join('|'), () => {
+    const bar = el('div', { class: 'pfad-bar' }, echte.map((g, i) => {
+      const n = g.module.length, f = g.module.filter((m) => st.get(m.id) === 'erledigt').length;
+      const s = spannen[i], dran = alleSpannen && woche >= s[0] && woche <= s[1];
+      return el('button', { type: 'button', class: 'pfad-seg' + (n && f === n ? ' komplett' : '') + (dran ? ' dran' : ''), style: 'flex-grow:' + breiten[i],
+        title: 'Phase ' + g.ph.id + ': ' + txt(g.ph.titel) + ' · ' + f + '/' + n,
+        'aria-label': 'Phase ' + g.ph.id + ': ' + txt(g.ph.titel) + ' – ' + f + ' von ' + n + ' Modulen erledigt' + (g.ph.wochen ? ', Woche ' + txt(g.ph.wochen) : '') + (dran ? ', laut Plan jetzt' : '') + '. Zur Phase springen',
+        onclick: () => { g.det.open = true; g.det.scrollIntoView({ behavior: bewegungReduziert() ? 'auto' : 'smooth', block: 'start' }); g.det.querySelector('summary').focus({ preventScroll: true }); } },
+        el('i', { style: 'width:' + (fort[i] * 100).toFixed(1) + '%' }));
+    }));
+    if (alleSpannen && woche >= 1) bar.append(el('span', { class: 'pfad-jetzt', style: 'left:' + (((Math.min(woche, ende) - 0.5) / ende) * 100).toFixed(2) + '%', title: 'Woche ' + woche }));
+    return [bar, el('div', { class: 'pfad-labels', 'aria-hidden': 'true' }, echte.map((g, i) => el('span', { style: 'flex-grow:' + breiten[i], text: g.ph.id })))];
+  });
+}
+
+/* ---------- Wiederholen (Abstände wachsen mit jedem bestandenen Quiz) ---------- */
+function wiederholungen(st) {
+  const h = heute(), liste = [];
+  for (const m of reihenfolge) {
+    if (st.get(m.id) !== 'erledigt') continue;
+    const eintraege = (logProModul.get(m.id) || []).filter((e) => istDatum(e.d)).sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
+    const daten = [...eintraege.map((e) => e.d), haken[m.id]].filter(istDatum).sort();
+    if (!daten.length) continue;
+    // 7 Tage nach Abschluss; bestandenes Quiz (≥ 2/3) verdoppelt den Abstand bis 56 Tage, nicht bestanden → 3 Tage
+    let intervall = 7, n = 0, quiz = '';
+    for (const e of eintraege) {
+      const q = quizQuote(e.quiz);
+      if (q == null) continue;
+      intervall = q < 2 / 3 ? 3 : n ? Math.max(7, Math.min(intervall * 2, 56)) : 7;
+      n++; quiz = txt(e.quiz);
+    }
+    const faellig = plusTage(daten[daten.length - 1], intervall);
+    liste.push({ m, faellig, ueber: tageZwischen(faellig, h), quiz });
+  }
+  return liste;
+}
+function renderWiederholen(st) {
+  const alle = wiederholungen(st);
+  const faellig = alle.filter((w) => w.ueber >= 0).sort((a, b) => b.ueber - a.ueber);
+  const naechste = alle.filter((w) => w.ueber < 0).sort((a, b) => (a.faellig < b.faellig ? -1 : 1))[0];
+  setze($('#k-wdh'), [heute(), alle.length, faellig.map((w) => w.m.id + ':' + w.ueber).join(','), naechste ? naechste.m.id + naechste.faellig : ''].join('|'), () => {
+    const teile = [el('h2', { class: 'k-label', text: 'Wiederholen' })];
+    if (!alle.length) {
+      teile.push(el('p', { class: 'gross' }, '–'), el('p', { class: 'muted klein', text: 'Erledigte Module kommen hier zur Wiederholung: nach 7 Tagen, bei schwachem Quiz schon nach 3.' }));
+      return teile;
+    }
+    if (!faellig.length) {
+      teile.push(el('p', { class: 'gross' }, '0', el('small', { text: ' fällig' })),
+        el('p', { class: 'muted klein', text: naechste ? 'Nächste Wiederholung: Modul ' + naechste.m.id + ' am ' + fmtVoll(naechste.faellig) + '.' : '' }));
+      return teile;
+    }
+    teile.push(el('p', { class: 'gross' }, String(faellig.length), el('small', { text: faellig.length === 1 ? ' Modul fällig' : ' Module fällig' })),
+      el('ul', { class: 'wdh-liste' }, faellig.slice(0, 4).map((w) => el('li', null,
+        el('div', { class: 'wdh-text' }, modulLink(w.m.id, w.m.id + ' · ' + txt(w.m.titel)),
+          el('span', { class: 'muted klein', text: (w.ueber === 0 ? 'heute fällig' : 'seit ' + anzahl(w.ueber, 'Tag', 'Tagen')) + (w.quiz ? ' · letztes Quiz ' + w.quiz : '') })),
+        sessionButton(w.m.id, false, 'quiz', true)))));
+    if (faellig.length > 4) teile.push(el('p', { class: 'muted klein', text: '+ ' + (faellig.length - 4) + ' weitere' }));
+    teile.push(el('p', { class: 'muted klein' }, '„Quiz“ kopiert ', el('code', { text: '/lern-session ID quiz' }), ' – bestanden verlängert den Abstand.'));
+    return teile;
+  });
+  return faellig;
 }
 
 function renderPlanStatus(st) {
@@ -811,12 +1223,15 @@ function renderNews() {
 /* ---------- Lernjournal ---------- */
 let journalAlle = false;
 function renderJournal() {
+  const fokusTage = new Map();   // Fokus-Sessions je Tag und Modul zusammenfassen
+  for (const s of zeit) { const k = s.d + '|' + s.id; const f = fokusTage.get(k) || { d: s.d, id: s.id, min: 0, n: 0 }; f.min += s.min; f.n++; fokusTage.set(k, f); }
   const eintraege = [
     ...log.map((e, i) => ({ typ: 'log', d: istDatum(e.d) ? e.d : '', id: txt(e.id), e, ord: 1e6 + i })),
+    ...[...fokusTage.values()].map((f, i) => ({ typ: 'fokus', d: f.d, id: f.id, f, ord: 5e5 + i })),
     ...Object.entries(haken).map(([id, d], i) => ({ typ: 'haken', d, id, ord: i })),   // später gesetzte Häkchen zuerst
   ].sort((a, b) => (a.d < b.d ? 1 : a.d > b.d ? -1 : b.ord - a.ord));
   const liste = $('#j-liste');
-  const key = JSON.stringify(haken) + '|' + journalAlle + '|' + heute();
+  const key = JSON.stringify(haken) + '|' + zeit.length + ':' + zeit.reduce((a, s) => a + s.min, 0) + '|' + journalAlle + '|' + heute();
   if (liste._key !== key) {
     liste._key = key;
     const zeige = journalAlle ? eintraege : eintraege.slice(0, JOURNAL_MAX);
@@ -825,12 +1240,13 @@ function renderJournal() {
       const name = x.id ? (m ? x.id + ' · ' + txt(m.titel) : 'Modul ' + x.id) : 'ohne Modul';
       const meta = el('div', { class: 'meta' },
         istDatum(x.d) ? el('time', { datetime: x.d, text: fmtDatum(x.d) }) : el('span', { text: fmtDatum(x.e && x.e.d) }),
-        x.typ === 'haken' ? el('span', { class: 'chip', text: 'abgehakt' }) : el('span', { class: 'chip', text: 'Session' }),
+        el('span', { class: 'chip', text: x.typ === 'haken' ? 'abgehakt' : x.typ === 'fokus' ? 'Fokus' : 'Session' }),
         x.typ === 'log' && x.e.quiz ? el('span', { class: 'chip', text: 'Quiz ' + txt(x.e.quiz) }) : null,
         x.typ === 'log' && (x.e.fertig === true || x.e.fertig === 'true') ? el('span', { class: 'chip akzent', text: 'abgeschlossen' }) : null);
       return el('li', null, meta,
         el('p', { class: 'j-text' }, x.id ? modulLink(x.id, name) : name),
-        x.typ === 'log' && x.e.note ? el('p', { class: 'j-text muted', text: txt(x.e.note) }) : null);
+        x.typ === 'log' && x.e.note ? el('p', { class: 'j-text muted', text: txt(x.e.note) }) : null,
+        x.typ === 'fokus' ? el('p', { class: 'j-text muted', text: fmtStd(x.f.min) + ' mit dem Fokus-Timer' + (x.f.n > 1 ? ' (' + x.f.n + ' Sessions)' : '') }) : null);
     }));
     $('#j-leer').hidden = eintraege.length > 0;
     $('#j-zahl').textContent = eintraege.length ? eintraege.length + (eintraege.length === 1 ? ' Eintrag' : ' Einträge') : '';
@@ -840,24 +1256,408 @@ function renderJournal() {
   }
 }
 
-/* ---------- Gesamt-Update ---------- */
-function aktualisiere() {
-  const st = new Map(reihenfolge.map((m) => [m.id, statusVon(m.id)]));
-  const naechstes = renderNaechstes(st);
-  renderFortschritt(st);
-  renderStreak();
-  renderPlanStatus(st);
+/* ---------- Fokus-Timer ---------- */
+const fokus = { zustand: null, tick: 0, audio: null };
+function ladeTimer() {
+  const t = store.get('timer', null);
+  fokus.zustand = t && typeof t === 'object' && Number(t.start) > 0 && modulMap.has(txt(t.id))
+    ? { id: txt(t.id), start: Number(t.start), ziel: Math.max(0, Number(t.ziel) || 0), pause: Math.max(0, Number(t.pause) || 0), pausiertSeit: Number(t.pausiertSeit) || 0 }
+    : null;
+}
+function fokusVergangen() {
+  const z = fokus.zustand, jetzt = Date.now();
+  return z ? Math.max(0, jetzt - z.start - z.pause - (z.pausiertSeit ? jetzt - z.pausiertSeit : 0)) : 0;
+}
+function tonBereit() {
+  try {
+    if (!fokus.audio) fokus.audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (fokus.audio.state === 'suspended') fokus.audio.resume();
+  } catch (e) { /* kein Ton */ }
+}
+function ton() {
+  tonBereit();   // iOS legt den AudioContext im Hintergrund schlafen
+  const a = fokus.audio;
+  if (!a) return;
+  try {
+    [660, 880, 1100].forEach((hz, i) => {
+      const o = a.createOscillator(), g = a.createGain(), t = a.currentTime + i * 0.18;
+      o.connect(g); g.connect(a.destination);
+      o.frequency.value = hz;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      o.start(t); o.stop(t + 0.18);
+    });
+  } catch (e) { /* kein Ton */ }
+}
+function fokusStart(id) {
+  if (fokus.zustand) return;
+  fokus.zustand = { id, start: Date.now(), ziel: fokusDauer, pause: 0, pausiertSeit: 0 };
+  store.set('timer', fokus.zustand);
+  tonBereit();
+  renderFokus();
+  melde(fokusDauer ? fokusDauer + ' Minuten Fokus für Modul ' + id + ' – los!' : 'Fokus-Timer läuft für Modul ' + id + '.');
+}
+function fokusPause() {
+  const z = fokus.zustand;
+  if (!z) return;
+  if (z.pausiertSeit) { z.pause += Date.now() - z.pausiertSeit; z.pausiertSeit = 0; } else z.pausiertSeit = Date.now();
+  store.set('timer', z);
+  renderFokus();
+}
+function fokusStopp(automatisch) {
+  const z = fokus.zustand;
+  if (!z) return;
+  let min = Math.round(fokusVergangen() / 60000);
+  if (z.ziel) min = Math.min(min, z.ziel);
+  // Lief der Timer im Hintergrund ab, zählt der Tag des Ablaufs, nicht der des Nachholens
+  const ende = automatisch && z.ziel ? new Date(z.start + z.pause + z.ziel * 60000) : new Date();
+  fokus.zustand = null;
+  store.weg('timer');
+  if (min >= 1) {
+    zeit.push({ t: ende.getTime(), d: iso(ende), id: z.id, min });
+    const ok = store.set('zeit', zeit);
+    melde((automatisch ? 'Geschafft: ' : 'Fokus beendet: ') + min + ' min für Modul ' + z.id + (ok ? '' : ' – nicht gespeichert (kein Browser-Speicher)'));
+  } else melde('Fokus beendet – unter einer Minute, nichts gespeichert.');
+  if (automatisch) { ton(); if (navigator.vibrate) navigator.vibrate([150, 80, 150]); }
+  renderFokus();
+  aktualisiere();
+}
+function renderFokus() {
+  const z = fokus.zustand;
+  document.documentElement.classList.toggle('fokus-an', !!z);
+  $('#fokus').hidden = !z;
+  for (const b of fokusButtons) { if (b.isConnected) beschrifteFokus(b); else fokusButtons.delete(b); }
+  if (!z) { clearInterval(fokus.tick); fokus.tick = 0; document.title = titelBasis; return; }
+  if (!fokus.tick) fokus.tick = setInterval(fokusTick, 1000);
+  fokusTick();
+}
+function fokusTick() {
+  const z = fokus.zustand;
+  if (!z) return;
+  const v = fokusVergangen();
+  if (z.ziel && v >= z.ziel * 60000) { fokusStopp(true); return; }
+  const s = Math.floor((z.ziel ? z.ziel * 60000 - v : v) / 1000);
+  const mmss = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  $('#f-zeit').textContent = mmss;
+  $('#f-id').textContent = 'Modul ' + z.id;
+  $('#f-pause').textContent = z.pausiertSeit ? 'Weiter' : 'Pause';
+  $('#fokus').setAttribute('aria-label', 'Fokus-Timer Modul ' + z.id + (z.pausiertSeit ? ', pausiert' : '') + (z.ziel ? ', noch ' + mmss : ', läuft seit ' + mmss));
+  document.title = (z.pausiertSeit ? '⏸ ' : '') + mmss + ' · ' + titelBasis;
+}
 
+/* ---------- Verlauf: Heatmap, Wochenbalken, Kennzahlen ---------- */
+function prognose(ctx) {
+  const pz = planZahlen();
+  if (pz.soll == null || pz.tage < 6 || ctx.ist <= 0) return null;
+  const rest = gesamtStd - ctx.ist;
+  const planEnde = plusTage(start, PLAN_WOCHEN * 7 - 1);
+  if (rest <= 0) return { fertig: true, planEnde };
+  return { datum: plusTage(heute(), Math.ceil(rest / (ctx.ist / (pz.tage + 1)))), planEnde };
+}
+function renderVerlauf(ctx) {
+  const { basis, n, aktuell } = wochenBasis();
+  const h = heute();
+  const minProTag = new Map();
+  for (const s of zeit) minProTag.set(s.d, (minProTag.get(s.d) || 0) + s.min);
+
+  const heat = $('#heat');
+  const hk = [basis, n, h, [...ctx.aktiv].sort().join(','), [...minProTag].join(',')].join('|');
+  if (heat._key !== hk) {
+    heat._key = hk;
+    heat.style.setProperty('--n', n);
+    const zellen = [];
+    let aktivTage = 0;
+    for (let w = 0; w < n; w++) for (let t = 0; t < 7; t++) {
+      const d = plusTage(basis, w * 7 + t), min = minProTag.get(d) || 0, an = ctx.aktiv.has(d);
+      const stufe = min >= 120 ? 4 : min >= 60 ? 3 : min >= 25 ? 2 : an ? 1 : 0;
+      if (an && d <= h) aktivTage++;
+      zellen.push(el('span', { class: (stufe ? 'l' + stufe : '') + (d === h ? ' heute' : '') + (d > h ? ' zukunft' : ''), title: fmtVoll(d) + (min ? ' · ' + fmtStd(min) + ' Fokus' : an ? ' · aktiv' : '') }));
+    }
+    heat.replaceChildren(...zellen);
+    heat.setAttribute('aria-label', 'Aktivität über ' + n + ' Wochen: an ' + aktivTage + ' Tagen aktiv');
+    $('#heat-text').textContent = (start && basis === start ? 'Seit Start am ' + fmtVoll(start) : 'Letzte ' + n + ' Wochen') + ' · ' + anzahl(aktivTage, 'aktiver Tag', 'aktive Tage') + (minProTag.size ? ' · dunkler = mehr Fokuszeit' : '');
+  }
+
+  const std = new Array(n).fill(0);
+  for (const m of reihenfolge) {
+    if (ctx.st.get(m.id) !== 'erledigt') continue;
+    const d = fertigDatum(m.id), w = d ? wocheVon(basis, d) : -1;
+    if (w >= 0 && w < n) std[w] += m.std;
+  }
+  const sollWoche = gesamtStd / PLAN_WOCHEN, max = Math.max(sollWoche * 1.5, ...std, 1);
+  const balken = $('#balken');
+  const bk = [std.join(','), aktuell, n, basis].join('|');
+  if (balken._key !== bk) {
+    balken._key = bk;
+    balken.style.setProperty('--n', n);
+    balken.replaceChildren(
+      ...std.map((v, w) => el('div', { class: 'b' + (v ? '' : ' null') + (w === aktuell ? ' aktuell' : '') + (w > aktuell ? ' zukunft' : ''), style: 'height:' + Math.max(2, (v / max) * 100).toFixed(1) + '%', title: 'Woche ' + (w + 1) + ': ' + fmtZahl(v) + ' Std.' })),
+      el('div', { class: 'soll', style: 'bottom:' + ((sollWoche / max) * 100).toFixed(1) + '%', title: 'Soll pro Woche: ' + fmtZahl(sollWoche) + ' Std.' }));
+    balken.setAttribute('aria-label', 'Modulstunden pro Woche: ' + std.map((v, w) => 'Woche ' + (w + 1) + ' ' + fmtZahl(v)).join(', ') + '. Soll pro Woche ' + fmtZahl(sollWoche) + ' Stunden.');
+    $('#balken-labels').replaceChildren(...std.map((_, w) => el('span', { text: start && basis === start ? String(w + 1) : w % 2 ? '' : fmtKurz(plusTage(basis, w * 7)) })));
+    $('#balken-text').textContent = 'Gestrichelt: Soll ' + fmtZahl(sollWoche) + ' Std. pro Woche' + (start && basis === start ? '' : start ? ' · bis zum Start zählen die letzten ' + n + ' Wochen' : ' · ohne Startdatum zählen die letzten ' + n + ' Wochen');
+  }
+
+  const wocheMin = zeit.filter((s) => wocheVon(basis, s.d) === aktuell).reduce((a, s) => a + s.min, 0);
+  const quizze = log.map((e) => quizQuote(e.quiz)).filter((q) => q != null);
+  const schnitt = quizze.length ? Math.round((quizze.reduce((a, b) => a + b, 0) / quizze.length) * 100) : null;
+  const prog = prognose(ctx);
+  const kz = [
+    ['Fokuszeit', fmtStd(ctx.fokusMin), zeit.length ? anzahl(zeit.length, 'Session', 'Sessions') + ' insgesamt' : 'Timer im Modul starten'],
+    ['Diese Woche', fmtStd(wocheMin), 'Fokuszeit'],
+    ['Journal', String(log.length), anzahl(log.length, 'Eintrag', 'Einträge') + ' aus /lern-session'],
+    ['Quiz-Schnitt', schnitt == null ? '–' : schnitt + ' %', quizze.length ? anzahl(quizze.length, 'Quiz', 'Quizze') : 'noch kein Quiz'],
+    ['Prognose', !prog ? '–' : prog.fertig ? 'fertig' : fmtVoll(prog.datum),
+      !prog ? 'ab Woche 2 mit Startdatum' : prog.fertig ? 'alles erledigt' : (prog.datum <= prog.planEnde ? 'vor ' : 'nach ') + 'Plan-Ende ' + fmtVoll(prog.planEnde)],
+  ];
+  setze($('#kennzahlen'), JSON.stringify(kz), () => kz.map(([l, w, s]) => el('div', { class: 'kz' }, el('span', { text: l }), el('b', { text: w }), el('span', { text: s }))));
+  $('#v-kurz').textContent = anzahl(ctx.aktiv.size, 'aktiver Tag', 'aktive Tage') + ' · ' + Object.keys(meilensteine).length + ' von ' + MEILENSTEINE.length + ' Meilensteinen';
+}
+
+/* ---------- Meilensteine & Konfetti ---------- */
+const MEILENSTEINE = [
+  { id: 'session', titel: 'Erste Session', text: 'Journal-Eintrag oder Fokus-Session', ok: () => log.length + zeit.length > 0 },
+  { id: 'modul', titel: 'Erstes Modul', text: 'Ein Modul erledigt', ok: (c) => c.fertig >= 1 },
+  { id: 'phase', titel: 'Erste Phase', text: 'Alle Module einer Phase', ok: (c) => c.phasenKomplett.length >= 1 },
+  { id: 'serie3', titel: '3 Tage in Folge', text: 'Dranbleiben', ok: (c) => c.serie >= 3 },
+  { id: 'serie7', titel: '7 Tage in Folge', text: 'Eine ganze Woche', ok: (c) => c.serie >= 7 },
+  { id: 'serie14', titel: '14 Tage in Folge', text: 'Zwei Wochen am Stück', ok: (c) => c.serie >= 14 },
+  { id: 'viertel', titel: '25 % geschafft', text: 'Ein Viertel der Stunden', ok: (c) => c.pct >= 25 },
+  { id: 'haelfte', titel: 'Halbzeit', text: 'Die Hälfte der Stunden', ok: (c) => c.pct >= 50 },
+  { id: 'dreiviertel', titel: '75 % geschafft', text: 'Endspurt', ok: (c) => c.pct >= 75 },
+  { id: 'alles', titel: 'Plan komplett', text: 'Alle Module erledigt', ok: (c) => c.n > 0 && c.fertig === c.n },
+  { id: 'journal10', titel: '10 Sessions', text: '10 Einträge im Lernjournal', ok: () => log.length >= 10 },
+  { id: 'quiz3', titel: 'Quiz-Profi', text: '3 Quizze ohne Fehler', ok: (c) => c.quizVoll >= 3 },
+  { id: 'fokus10', titel: '10 Fokus-Stunden', text: 'Mit dem Fokus-Timer', ok: (c) => c.fokusMin >= 600 },
+  { id: 'voraus', titel: 'Dem Plan voraus', text: 'Mindestens 3 Std. vor dem Soll', ok: (c) => c.soll != null && c.ist - c.soll >= 3 },
+];
+let stillModus = false;   // beim Zurücksetzen nicht feiern, was das Journal sofort wieder begründet
+function renderMeilensteine(ctx) {
+  const neu = MEILENSTEINE.filter((ms) => !meilensteine[ms.id] && ms.ok(ctx));
+  if (neu.length) {
+    for (const ms of neu) meilensteine[ms.id] = heute();
+    store.set('meilensteine', meilensteine);
+    if (!stillModus) {
+      melde(neu.length === 1 ? 'Meilenstein: ' + neu[0].titel + ' 🎉' : neu.length + ' Meilensteine erreicht 🎉');
+      konfetti();
+    }
+  }
+  const box = $('#meilensteine');
+  const key = MEILENSTEINE.map((ms) => meilensteine[ms.id] || '').join('|') + '|' + heute();
+  if (box._key !== key) {
+    box._key = key;
+    box.replaceChildren(...MEILENSTEINE.map((ms) => {
+      const d = meilensteine[ms.id];
+      return el('div', { class: 'ms' + (d ? ' an' : ''), title: d ? 'Erreicht am ' + fmtVoll(d) : 'Noch offen' },
+        el('span', { class: 'ms-icon', 'aria-hidden': 'true', text: d ? '✓' : '' }),
+        el('div', null, el('b', { text: ms.titel }), el('span', { class: 'klein', text: d ? 'erreicht ' + fmtDatum(d) : ms.text })),
+        el('span', { class: 'sr-only', text: d ? ' – erreicht' : ' – noch offen' }));
+    }));
+    $('#ms-zahl').textContent = Object.keys(meilensteine).length + ' / ' + MEILENSTEINE.length;
+  }
+}
+function konfetti() {
+  if (bewegungReduziert() || document.hidden || document.querySelector('.konfetti')) return;
+  const c = el('canvas', { class: 'konfetti', 'aria-hidden': 'true' });
+  document.body.append(c);
+  const ctx = c.getContext('2d'), dpr = Math.min(window.devicePixelRatio || 1, 2), W = window.innerWidth, H = window.innerHeight;
+  c.width = W * dpr; c.height = H * dpr; ctx.scale(dpr, dpr);
+  const farben = [(AKZENTE[design.akzent] || AKZENTE.teal)[0], '#f59e0b', '#ef4444', '#3b82f6', '#a855f7', '#22c55e'];
+  const teile = Array.from({ length: 140 }, () => ({
+    x: W / 2 + (Math.random() - 0.5) * 240, y: H * 0.4, vx: (Math.random() - 0.5) * 16, vy: -Math.random() * 15 - 5, g: 0.35 + Math.random() * 0.2,
+    s: 5 + Math.random() * 6, r: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3, f: farben[Math.floor(Math.random() * farben.length)],
+  }));
+  const t0 = performance.now();
+  (function schritt(t) {
+    const dt = (t - t0) / 1000;
+    ctx.clearRect(0, 0, W, H);
+    ctx.globalAlpha = Math.max(0, 1 - Math.max(0, dt - 1.5) / 0.6);
+    for (const p of teile) {
+      p.vy += p.g; p.x += p.vx; p.y += p.vy; p.vx *= 0.99; p.r += p.vr;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.f; ctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.6); ctx.restore();
+    }
+    if (dt < 2.1) requestAnimationFrame(schritt); else c.remove();
+  })(t0);
+}
+
+/* ---------- Bericht für Claude, Fortschrittsbild, Notizen, Kalender ---------- */
+function bericht(ctx) {
+  const pz = planZahlen(), st = ctx.st, z = [];
+  const ids = (status) => reihenfolge.filter((m) => st.get(m.id) === status).map((m) => m.id);
+  const naechstes = reihenfolge.find((m) => st.get(m.id) !== 'erledigt');
+  z.push('# Lernstand ' + titelBasis + ' (' + fmtVoll(heute()) + ')', '');
+  z.push('- Plan: ' + reihenfolge.length + ' Module, ' + fmtZahl(gesamtStd) + ' Std., ' + PLAN_WOCHEN + ' Wochen' + (start ? ', Start ' + fmtVoll(start) : ', kein Startdatum gesetzt'));
+  if (pz.soll != null) {
+    const diff = ctx.ist - pz.soll;
+    z.push('- Woche ' + pz.woche + ' von ' + PLAN_WOCHEN + ': Ist ' + fmtZahl(ctx.ist) + ' Std., Soll ' + fmtZahl(pz.soll) + ' Std. (' + (Math.abs(diff) < 1 ? 'im Plan' : diff > 0 ? fmtZahl(diff) + ' Std. voraus' : fmtZahl(-diff) + ' Std. hinter Plan') + ')');
+  }
+  z.push('- Erledigt: ' + ctx.fertig + ' von ' + ctx.n + ' Modulen' + (ctx.fertig ? ' (' + ids('erledigt').join(', ') + ')' : ''));
+  const begonnen = ids('begonnen');
+  if (begonnen.length) z.push('- Begonnen: ' + begonnen.join(', '));
+  if (naechstes) z.push('- Nächstes Modul: ' + naechstes.id + ' ' + txt(naechstes.titel) + (naechstes.ziel ? ' – ' + txt(naechstes.ziel) : ''));
+  z.push('- Streak: ' + anzahl(ctx.serie, 'Tag', 'Tage') + ' · Fokuszeit gesamt: ' + fmtStd(ctx.fokusMin));
+  const quizze = log.map((e) => quizQuote(e.quiz)).filter((q) => q != null);
+  if (quizze.length) z.push('- Quiz-Schnitt: ' + Math.round((quizze.reduce((a, b) => a + b, 0) / quizze.length) * 100) + ' % aus ' + anzahl(quizze.length, 'Quiz', 'Quizzen'));
+  const prog = prognose(ctx);
+  if (prog && !prog.fertig) z.push('- Prognose bei diesem Tempo: fertig am ' + fmtVoll(prog.datum) + ' (Plan-Ende ' + fmtVoll(prog.planEnde) + ')');
+  const faellig = wiederholungen(st).filter((w) => w.ueber >= 0).sort((a, b) => b.ueber - a.ueber);
+  z.push('', '## Fällige Wiederholungen');
+  z.push(...(faellig.length ? faellig.map((w) => '- ' + w.m.id + ' ' + txt(w.m.titel) + (w.quiz ? ' (letztes Quiz ' + w.quiz + ')' : '') + ' – fällig seit ' + anzahl(w.ueber, 'Tag', 'Tagen')) : ['- keine']));
+  const letzte = log.filter((e) => istDatum(e.d)).sort((a, b) => (a.d < b.d ? 1 : -1)).slice(0, 6);
+  if (letzte.length) {
+    z.push('', '## Letzte Journal-Einträge');
+    z.push(...letzte.map((e) => '- ' + fmtVoll(e.d) + ' · ' + txt(e.id) + (e.note ? ': ' + txt(e.note) : '') + (e.quiz ? ' (Quiz ' + txt(e.quiz) + ')' : '') + (e.fertig === true || e.fertig === 'true' ? ' – abgeschlossen' : '')));
+  }
+  const notizIds = reihenfolge.filter((m) => notizen[m.id]).slice(0, 8);
+  if (notizIds.length) {
+    z.push('', '## Meine Notizen');
+    z.push(...notizIds.map((m) => '- ' + m.id + ': ' + notizen[m.id].trim().replace(/\s+/g, ' ').slice(0, 220)));
+  }
+  z.push('', 'Bitte bewerte meinen Stand kurz und schlag einen konkreten Plan für die nächsten 7 Tage vor: welche Module, welche Wiederholungen, wie viel Zeit. Lern-Sessions starte ich in Claude Code mit /lern-session <ID>.');
+  return z.join('\n');
+}
+async function kopiereBericht() {
+  const text = bericht(zustand());
+  if (await kopiere(text)) { melde('Bericht kopiert – in Claude einfügen und nach einem Wochenplan fragen.'); return; }
+  if (navigator.share) { navigator.share({ text, title: 'Lernstand' }).catch(() => {}); return; }
+  window.prompt('Bericht zum Kopieren:', text);
+}
+function fortschrittBild(ctx) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 1080;
+  const x = c.getContext('2d');
+  const [a1, a2] = AKZENTE[design.akzent] || AKZENTE.teal;
+  const g = x.createLinearGradient(0, 0, 1080, 1080);
+  g.addColorStop(0, a1); g.addColorStop(1, a2);
+  x.fillStyle = g; x.fillRect(0, 0, 1080, 1080);
+  x.fillStyle = 'rgba(255,255,255,.14)';
+  if (typeof x.roundRect === 'function') { x.beginPath(); x.roundRect(60, 60, 960, 960, 48); x.fill(); } else x.fillRect(60, 60, 960, 960);
+  x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  const F = 'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
+  x.font = '600 46px ' + F; x.fillText(titelBasis, 540, 150);
+  const pz = planZahlen();
+  x.font = '400 34px ' + F; x.globalAlpha = 0.85;
+  x.fillText(pz.soll != null ? 'Woche ' + pz.woche + ' von ' + PLAN_WOCHEN : fmtVoll(heute()), 540, 210);
+  x.globalAlpha = 1;
+  // Ring
+  const pct = Math.min(ctx.pct, 100) / 100;
+  x.lineWidth = 34; x.lineCap = 'round';
+  x.strokeStyle = 'rgba(255,255,255,.25)'; x.beginPath(); x.arc(540, 500, 190, 0, Math.PI * 2); x.stroke();
+  if (pct > 0) { x.strokeStyle = '#fff'; x.beginPath(); x.arc(540, 500, 190, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pct); x.stroke(); }
+  x.font = '700 120px ' + F; x.fillText(Math.round(ctx.pct) + ' %', 540, 490);
+  x.font = '400 32px ' + F; x.globalAlpha = 0.85; x.fillText('der Stunden', 540, 575); x.globalAlpha = 1;
+  x.font = '600 48px ' + F;
+  x.fillText(ctx.fertig + ' / ' + ctx.n + ' Module  ·  ' + fmtZahl(ctx.ist) + ' / ' + fmtZahl(gesamtStd) + ' Std.', 540, 790);
+  x.font = '400 40px ' + F; x.globalAlpha = 0.9;
+  x.fillText('Streak ' + anzahl(ctx.serie, 'Tag', 'Tage') + (ctx.fokusMin ? '  ·  Fokus ' + fmtStd(ctx.fokusMin) : ''), 540, 860);
+  x.font = '400 30px ' + F; x.globalAlpha = 0.7; x.fillText(fmtVoll(heute()), 540, 960); x.globalAlpha = 1;
+  c.toBlob((blob) => {
+    if (!blob) { melde('Bild konnte nicht erzeugt werden.'); return; }
+    teileOderLade(blob, 'ki-lernplan-fortschritt-' + heute() + '.png', 'Fortschrittsbild erzeugt.', 'Mein Lernfortschritt');
+  }, 'image/png');
+}
+function notizenMarkdown() {
+  const mitNotiz = reihenfolge.filter((m) => notizen[m.id]);
+  if (!mitNotiz.length) { melde('Noch keine Notizen vorhanden.'); return; }
+  const md = ['# Notizen – ' + titelBasis + ' (' + fmtVoll(heute()) + ')', '',
+    ...mitNotiz.flatMap((m) => ['## ' + m.id + ' · ' + txt(m.titel), '', notizen[m.id].trim(), ''])].join('\n');
+  teileOderLade(new Blob([md], { type: 'text/markdown' }), 'ki-lernplan-notizen-' + heute() + '.md', anzahl(mitNotiz.length, 'Notiz', 'Notizen') + ' als Markdown exportiert.', 'Notizen');
+}
+// Kalenderdatei (.ics): wiederkehrende Lernzeiten bis zum Plan-Ende, in Ortszeit ohne Zeitzone
+function kalenderDatei() {
+  const tage = [...document.querySelectorAll('#kal-tage input:checked')].map((i) => i.value);
+  const uhr = /^\d{2}:\d{2}$/.test($('#kal-uhr').value) ? $('#kal-uhr').value : '19:00';
+  const dauer = Number($('#kal-dauer').value) || 45;
+  if (!tage.length) { melde('Bitte mindestens einen Wochentag wählen.'); return; }
+  kalenderPref = { tage, uhr, dauer };
+  store.set('kalender', kalenderPref);
+  const WT = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+  let d = heute();
+  for (let i = 0; i < 7 && !tage.includes(WT[zuDate(d).getDay()]); i++) d = plusTage(d, 1);
+  const [hh, mm] = uhr.split(':').map(Number);
+  const beginn = hh * 60 + mm, ende = beginn + dauer;
+  const zeitStr = (min) => String(Math.floor(min / 60)).padStart(2, '0') + String(min % 60).padStart(2, '0') + '00';
+  const kompakt = (s) => s.replace(/-/g, '');
+  const endeTag = ende >= 1440 ? plusTage(d, 1) : d;   // über Mitternacht hinaus
+  // bis Plan-Ende; liegt das schon hinter uns (oder fehlt der Start), 12 Wochen ab heute
+  let bis = start ? plusTage(start, PLAN_WOCHEN * 7 - 1) : '';
+  if (!bis || bis < d) bis = plusTage(heute(), PLAN_WOCHEN * 7 - 1);
+  const esc = (s) => s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,');
+  const falte = (zeile) => zeile.match(/.{1,70}/g).join('\r\n ');
+  const url = imNetz ? location.href.split('#')[0] : '';
+  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//KI-Lernplan//DE', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT',
+    'UID:kilp-' + Date.now() + '@ki-lernplan', 'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z',
+    'DTSTART:' + kompakt(d) + 'T' + zeitStr(beginn), 'DTEND:' + kompakt(endeTag) + 'T' + zeitStr(ende % 1440),
+    'RRULE:FREQ=WEEKLY;BYDAY=' + tage.join(',') + ';UNTIL=' + kompakt(bis) + 'T235959',
+    'SUMMARY:' + esc(titelBasis + ': Lernzeit'),
+    'DESCRIPTION:' + esc('Das nächste Modul steht im Dashboard.' + (url ? ' ' + url : '')),
+    'BEGIN:VALARM', 'TRIGGER:-PT10M', 'ACTION:DISPLAY', 'DESCRIPTION:Lernzeit', 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR']
+    .map(falte).join('\r\n') + '\r\n';
+  teileOderLade(new Blob([ics], { type: 'text/calendar' }), 'ki-lernplan-lernzeiten.ics',
+    anzahl(tage.length, 'Termin', 'Termine') + ' pro Woche bis ' + fmtVoll(bis) + ' – Datei öffnen und in den Kalender übernehmen.', 'Lernzeiten');
+}
+
+/* ---------- Darstellung, Hilfe, Tastatur ---------- */
+function wendeDesignAn() {
+  const root = document.documentElement;
+  if (design.theme === 'hell' || design.theme === 'dunkel') root.setAttribute('data-theme', design.theme); else root.removeAttribute('data-theme');
+  if (AKZENTE[design.akzent] && design.akzent !== 'teal') root.setAttribute('data-akzent', design.akzent); else root.removeAttribute('data-akzent');
+  document.querySelectorAll('meta[name=theme-color]').forEach((m) => {
+    m.content = root.dataset.theme ? (root.dataset.theme === 'dunkel' ? '#0e1115' : '#f5f6f8') : m.media.includes('dark') ? '#0e1115' : '#f5f6f8';
+  });
+}
+function oeffneHilfe() { const d = $('#hilfe'); if (typeof d.showModal === 'function' && !d.open) d.showModal(); }
+
+/* ---------- Gesamt-Update ---------- */
+let naechstesModul = null;
+// Kennzahlen des aktuellen Stands – für Kacheln, Meilensteine, Bericht und Bild.
+function zustand() {
+  const st = new Map(reihenfolge.map((m) => [m.id, statusVon(m.id)]));
+  const fertigListe = reihenfolge.filter((m) => st.get(m.id) === 'erledigt');
+  const ist = summe(fertigListe), akt = aktivitaet(), pz = planZahlen();
+  return {
+    st, fertig: fertigListe.length, n: reihenfolge.length, ist, pct: gesamtStd ? (ist / gesamtStd) * 100 : 0,
+    aktiv: akt.aktiv, serie: akt.serie, akt, pz, soll: pz.soll,
+    phasenKomplett: gruppen.filter((g) => g.module.length && g.module.every((m) => st.get(m.id) === 'erledigt')).map((g) => g.ph.id),
+    quizVoll: log.filter((e) => quizQuote(e.quiz) === 1).length,
+    fokusMin: zeit.reduce((a, s) => a + s.min, 0),
+  };
+}
+let phasenFertigVorher = null;
+function aktualisiere() {
+  const ctx = zustand(), st = ctx.st;
+  const naechstes = renderNaechstes(st);
+  naechstesModul = naechstes;
+  renderFortschritt(st);
+  renderStreak(ctx.akt);
+  renderPlanStatus(st);
+  renderWiederholen(st);
+  renderLernpfad(st, ctx.pz);
+  // Eine Phase gerade eben komplett gemacht? Kurz feiern – vor den Meilensteinen, damit die Reihenfolge der Meldungen stimmt.
+  if (phasenFertigVorher && !stillModus) {
+    const neu = ctx.phasenKomplett.filter((id) => !phasenFertigVorher.includes(id));
+    if (neu.length) { melde('Phase ' + neu.join(' und ') + ' komplett – weiter so!'); konfetti(); }
+  }
+  phasenFertigVorher = ctx.phasenKomplett;
+  renderMeilensteine(ctx);
+  renderVerlauf(ctx);
+  for (const b of fokusButtons) { if (b.isConnected) beschrifteFokus(b); else fokusButtons.delete(b); }
+
+  const fokusProModul = new Map();
+  for (const s of zeit) fokusProModul.set(s.id, (fokusProModul.get(s.id) || 0) + s.min);
   const filterAktiv = filter !== 'alle' || !!suche;
   let sichtbar = 0;
   for (const k of karten.values()) {
-    const s = st.get(k.m.id), perLog = fertigLautLog.has(k.m.id);
+    const s = st.get(k.m.id), perLog = fertigLautLog.has(k.m.id), fm = fokusProModul.get(k.m.id) || 0;
     k.karte.dataset.status = s;
     k.badge.className = 'badge ' + s;
     k.badge.textContent = s;
     k.cb.checked = perLog || !!haken[k.m.id];
     k.cb.disabled = perLog;
     k.cbHinweis.textContent = perLog ? '(laut Journal)' : haken[k.m.id] ? '(' + fmtDatum(haken[k.m.id]) + ')' : '';
+    k.fokusZeile.hidden = !fm;
+    if (fm) k.fokusZeile.textContent = 'Fokuszeit: ' + fmtStd(fm) + (k.m.std ? ' von geplant ' + fmtZahl(k.m.std) + ' Std.' : '');
     k.karte.hidden = !passt(k, s);
     if (!k.karte.hidden) sichtbar++;
   }
@@ -872,9 +1672,10 @@ function aktualisiere() {
     g.dran.hidden = !(naechstes && naechstes.p === g.ph.id && g.module.includes(naechstes));
     g.det.hidden = filterAktiv && !g.module.some((m) => !karten.get(m.id).karte.hidden);
   }
-  $('#treffer').textContent = filterAktiv
+  const trefferText = filterAktiv
     ? sichtbar + ' von ' + reihenfolge.length + ' Modulen'
     : reihenfolge.length + ' Module · ' + fmtZahl(gesamtStd) + ' Std.';
+  if ($('#treffer').textContent !== trefferText) $('#treffer').textContent = trefferText;   // aria-live nur bei Änderung
   $('#plan-leer').hidden = !(filterAktiv && sichtbar === 0 && reihenfolge.length > 0);
   renderJournal();
 }
@@ -914,8 +1715,17 @@ function setzeStart(wert) {
 function syncFormulare() {
   for (const k of karten.values()) if (document.activeElement !== k.ta) k.ta.value = notizen[k.m.id] || '';
   if (document.activeElement !== $('#start')) $('#start').value = start;
+  const radio = (name, wert) => { const r = document.querySelector('input[name=' + name + '][value=' + wert + ']'); if (r) r.checked = true; };
+  radio('theme', design.theme === 'hell' || design.theme === 'dunkel' ? design.theme : 'system');
+  radio('akzent', AKZENTE[design.akzent] ? design.akzent : 'teal');
+  $('#fokus-dauer').value = String(fokusDauer);
+  const kp = kalenderPref;
+  if (Array.isArray(kp.tage)) document.querySelectorAll('#kal-tage input').forEach((i) => { i.checked = kp.tage.includes(i.value); });
+  if (/^\d{2}:\d{2}$/.test(txt(kp.uhr))) $('#kal-uhr').value = kp.uhr;
+  if ([30, 45, 60, 90].includes(Number(kp.dauer))) $('#kal-dauer').value = String(kp.dauer);
 }
-const umfang = (done, notes) => anzahl(Object.keys(done).length, 'Häkchen', 'Häkchen') + ', ' + anzahl(Object.keys(notes).length, 'Notiz', 'Notizen');
+const umfang = (done, notes, z) => anzahl(Object.keys(done).length, 'Häkchen', 'Häkchen') + ', ' + anzahl(Object.keys(notes).length, 'Notiz', 'Notizen')
+  + (z ? ', ' + anzahl(z.length, 'Fokus-Session', 'Fokus-Sessions') : '');
 function ladeHerunter(blob, name) {
   const url = URL.createObjectURL(blob);
   const a = el('a', { href: url, download: name });
@@ -924,23 +1734,17 @@ function ladeHerunter(blob, name) {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
-function exportiere() {
-  const daten = { app: 'ki-lernplan', version: 1, exportiert: heute(), start, done: haken, notes: notizen };
-  const name = 'ki-lernplan-sicherung-' + heute() + '.json';
-  const blob = new Blob([JSON.stringify(daten, null, 2)], { type: 'application/json' });
-  const info = 'Sicherung exportiert (' + umfang(haken, notizen) + ').';
-  // Auf Touch-Geräten und in der App übers Teilen-Menü: „In Dateien sichern“, AirDrop, Mail an sich selbst.
-  // In der iOS-App keinen Download versuchen – der hängt dort oder öffnet eine Vorschau ohne Zurück.
+// Auf Touch-Geräten und in der App übers Teilen-Menü („In Dateien sichern“, AirDrop, Mail), sonst Download.
+// In der iOS-App keinen Download versuchen – der hängt dort oder öffnet eine Vorschau ohne Zurück.
+function teileOderLade(blob, name, info, titel) {
   let datei = null;
-  try { datei = new File([blob], name, { type: 'application/json' }); } catch (e) { /* alter Browser */ }
-  const app = document.documentElement.classList.contains('app');
-  const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
-  if (datei && (touch || app) && navigator.canShare && navigator.canShare({ files: [datei] })) {
-    navigator.share({ files: [datei], title: 'KI-Lernplan-Sicherung' })
+  try { datei = new File([blob], name, { type: blob.type }); } catch (e) { /* alter Browser */ }
+  if (datei && (istTouch() || istApp) && navigator.canShare && navigator.canShare({ files: [datei] })) {
+    navigator.share({ files: [datei], title: titel || name })
       .then(() => melde(info))
       .catch((e) => {
         if (e && e.name === 'AbortError') return;
-        if (app) { melde('Teilen hat nicht geklappt – bitte noch einmal tippen.'); return; }
+        if (istApp) { melde('Teilen hat nicht geklappt – bitte noch einmal tippen.'); return; }
         ladeHerunter(blob, name);
         melde(info);
       });
@@ -949,7 +1753,14 @@ function exportiere() {
   ladeHerunter(blob, name);
   melde(info);
 }
-// Zusammenführen: Häkchen vereinen (frühestes Datum gewinnt), Notizen ergänzen, eigenes Startdatum behalten.
+function exportiere() {
+  const daten = { app: 'ki-lernplan', version: 2, exportiert: heute(), start, done: haken, notes: notizen, zeit, meilensteine, kalender: kalenderPref, fokusDauer };
+  teileOderLade(new Blob([JSON.stringify(daten, null, 2)], { type: 'application/json' }), 'ki-lernplan-sicherung-' + heute() + '.json',
+    'Sicherung exportiert (' + umfang(haken, notizen, zeit) + ').', 'KI-Lernplan-Sicherung');
+}
+const zeitKey = (s) => (s.t ? 't' + s.t : s.d + '|' + s.id + '|' + s.min);
+// Zusammenführen: Häkchen und Meilensteine vereinen (frühestes Datum gewinnt), Notizen ergänzen,
+// Fokus-Sessions ohne Dubletten, eigenes Startdatum behalten.
 function fuehreZusammen(neu) {
   const done = { ...haken };
   for (const [id, d] of Object.entries(neu.done)) if (!done[id] || d < done[id]) done[id] = d;
@@ -958,7 +1769,11 @@ function fuehreZusammen(neu) {
     const a = notes[id] || '';
     notes[id] = !a.trim() || t.includes(a) ? t : a.includes(t) ? a : a.trimEnd() + '\n\n' + t;
   }
-  return { done, notes, start: start || neu.start };
+  const bekannt = new Set(zeit.map(zeitKey));
+  const z = [...zeit, ...neu.zeit.filter((s) => !bekannt.has(zeitKey(s)))].sort((a, b) => a.t - b.t);
+  const ms = { ...meilensteine };
+  for (const [id, d] of Object.entries(neu.meilensteine)) if (!ms[id] || d < ms[id]) ms[id] = d;
+  return { done, notes, start: start || neu.start, zeit: z, meilensteine: ms };
 }
 async function importiere(datei) {
   let obj;
@@ -967,37 +1782,51 @@ async function importiere(datei) {
     melde('Import fehlgeschlagen: Das ist keine Sicherung dieses Dashboards.');
     return;
   }
-  const neu = { done: saubereHaken(obj.done), notes: saubereNotizen(obj.notes), start: plausibel(obj.start) ? obj.start : '' };
+  const neu = { done: saubereHaken(obj.done), notes: saubereNotizen(obj.notes), start: plausibel(obj.start) ? obj.start : '',
+    zeit: saubereZeit(obj.zeit), meilensteine: saubereHaken(obj.meilensteine), kalender: nurObjekt(obj.kalender),
+    fokusDauer: FOKUS_DAUERN.includes(Number(obj.fokusDauer)) ? Number(obj.fokusDauer) : null };
   const wahl = await frage('Sicherung importieren?',
-    'Sicherung' + (istDatum(obj.exportiert) ? ' vom ' + fmtVoll(obj.exportiert) : '') + ': ' + umfang(neu.done, neu.notes)
+    'Sicherung' + (istDatum(obj.exportiert) ? ' vom ' + fmtVoll(obj.exportiert) : '') + ': ' + umfang(neu.done, neu.notes, neu.zeit)
+    + ', ' + anzahl(Object.keys(neu.meilensteine).length, 'Meilenstein', 'Meilensteine')
     + (neu.start ? ', Start ' + fmtVoll(neu.start) : ', kein Startdatum')
     + '. „Zusammenführen“ behält zusätzlich alles, was auf diesem Gerät steht. „Ersetzen“ überschreibt es.',
     'Zusammenführen', false, 'Ersetzen');
   if (wahl !== 'ja' && wahl !== 'alt') return;
   const ergebnis = wahl === 'ja' ? fuehreZusammen(neu) : neu;
-  haken = ergebnis.done; notizen = ergebnis.notes; start = ergebnis.start;
-  const gespeichert = store.set('done', haken) & store.set('notes', notizen) & speichereStart();
+  haken = ergebnis.done; notizen = ergebnis.notes; start = ergebnis.start; zeit = ergebnis.zeit; meilensteine = ergebnis.meilensteine;
+  if (wahl === 'alt') {   // Ersetzen übernimmt auch die Vorgaben, sofern die Sicherung welche hat
+    if (Object.keys(neu.kalender).length) { kalenderPref = neu.kalender; store.set('kalender', kalenderPref); }
+    if (neu.fokusDauer != null) { fokusDauer = neu.fokusDauer; store.set('fokus-dauer', fokusDauer); }
+  }
+  const gespeichert = store.set('done', haken) & store.set('notes', notizen) & speichereStart() & store.set('zeit', zeit) & store.set('meilensteine', meilensteine);
   syncFormulare();
   aktualisiere();
   melde(!gespeichert ? 'Importiert, aber nicht dauerhaft gespeichert (Browser-Speicher nicht verfügbar).'
-    : (wahl === 'ja' ? 'Zusammengeführt' : 'Ersetzt') + ' – jetzt ' + umfang(haken, notizen) + '.');
+    : (wahl === 'ja' ? 'Zusammengeführt' : 'Ersetzt') + ' – jetzt ' + umfang(haken, notizen, zeit) + '.');
 }
 async function zuruecksetzen() {
   const wahl = await frage('Alles zurücksetzen?',
-    'Alle Häkchen, Notizen und das Startdatum auf diesem Gerät werden gelöscht. Lernjournal und News in data/ bleiben erhalten. Tipp: Vorher exportieren.',
+    'Häkchen, Notizen, Fokuszeiten, Meilensteine und das Startdatum auf diesem Gerät werden gelöscht. Lernjournal und News in data/ bleiben erhalten. Tipp: Vorher exportieren.',
     'Zurücksetzen', true);
   if (wahl !== 'ja') return;
-  ['done', 'notes', 'start'].forEach((k) => store.weg(k));   // nur das, was der Dialog nennt
-  haken = {}; notizen = {}; start = '';
+  ['done', 'notes', 'start', 'zeit', 'meilensteine', 'timer', 'ui'].forEach((k) => store.weg(k));   // Darstellung und Kalender-Vorgaben bleiben
+  haken = {}; notizen = {}; start = ''; zeit = []; meilensteine = {}; ui = {};
+  fokus.zustand = null;
+  renderFokus();
   syncFormulare();
+  stillModus = true;
   aktualisiere();
+  stillModus = false;
   melde('Alles zurückgesetzt.');
 }
 
 /* ---------- Start ---------- */
 ladeZustand();
-document.title = txt(planDaten.titel) || 'KI-Lernplan';
-$('#titel').textContent = document.title;
+ladeTimer();
+wendeDesignAn();
+const titelBasis = txt(planDaten.titel) || 'KI-Lernplan';
+document.title = titelBasis;
+$('#titel').textContent = titelBasis;
 $('#start-label').textContent = 'Beginn deines ' + PLAN_WOCHEN + '-Wochen-Plans – daraus entstehen „Woche X von ' + PLAN_WOCHEN + '“ und die Soll-Stunden.';
 
 // Ein Syntaxfehler lässt die ganze Datei ausfallen – dann fehlt die globale Variable. So lässt sich die Datei benennen.
@@ -1013,7 +1842,13 @@ if (!store.ok) banner(['Dieser Browser erlaubt hier keinen lokalen Speicher. Hä
 bauePlan();
 baueNewsFilter();
 renderNews();
+syncFormulare();
+$('#verlauf').open = typeof ui.verlauf === 'boolean' ? ui.verlauf : window.innerWidth >= 1000;
+$('#kuerzel-an').checked = ui.kuerzel !== false;
+$('#kuerzel-an').addEventListener('change', (e) => { ui.kuerzel = e.target.checked; store.set('ui', ui); });
+$('#verlauf').addEventListener('toggle', (e) => { ui.verlauf = e.target.open; store.set('ui', ui); });
 aktualisiere();
+renderFokus();
 const erstesOffenes = reihenfolge.find((m) => statusVon(m.id) !== 'erledigt');
 if (erstesOffenes) karten.get(erstesOffenes.id).g.det.open = true;
 
@@ -1061,11 +1896,54 @@ $('#start-weg').addEventListener('click', () => setzeStart(''));
 $('#export').addEventListener('click', exportiere);
 $('#import-btn').addEventListener('click', () => $('#import').click());
 $('#import').addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) importiere(f); });
+$('#notizen-md').addEventListener('click', notizenMarkdown);
 $('#reset').addEventListener('click', zuruecksetzen);
+document.querySelectorAll('input[name=theme]').forEach((r) => r.addEventListener('change', () => { design.theme = r.value; store.set('design', design); wendeDesignAn(); }));
+document.querySelectorAll('input[name=akzent]').forEach((r) => r.addEventListener('change', () => { design.akzent = r.value; store.set('design', design); wendeDesignAn(); }));
+$('#fokus-dauer').addEventListener('change', (e) => {
+  const v = Number(e.target.value);
+  fokusDauer = FOKUS_DAUERN.includes(v) ? v : 25;
+  store.set('fokus-dauer', fokusDauer);
+  for (const b of fokusButtons) if (b.isConnected) beschrifteFokus(b);
+  melde(fokusDauer ? 'Fokus-Sessions dauern jetzt ' + fokusDauer + ' Minuten.' : 'Fokus-Timer läuft jetzt offen, bis du ihn stoppst.');
+});
+$('#kal-btn').addEventListener('click', kalenderDatei);
+$('#hilfe-btn').addEventListener('click', oeffneHilfe);
+$('#bericht').addEventListener('click', kopiereBericht);
+$('#bild').addEventListener('click', () => fortschrittBild(zustand()));
+$('#f-pause').addEventListener('click', fokusPause);
+$('#f-stopp').addEventListener('click', () => fokusStopp(false));
+
+// Tastenkürzel – nicht beim Tippen und nicht in Dialogen
+document.addEventListener('keydown', (e) => {
+  if (e.altKey || e.ctrlKey || e.metaKey || ui.kuerzel === false) return;
+  const t = e.target;
+  if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
+  if (document.querySelector('dialog[open]')) return;
+  if (e.key === '/') { e.preventDefault(); $('#suche').focus(); }
+  else if (e.key === 'n' || e.key === 'N') { if (naechstesModul) zeigeModul(naechstesModul.id); }
+  else if (e.key === 'f' || e.key === 'F') { if (fokus.zustand) fokusStopp(false); else if (naechstesModul) fokusStart(naechstesModul.id); }
+  else if (e.key === '?') { e.preventDefault(); oeffneHilfe(); }
+});
+
+// Chrome/Edge/Android: eigener Installations-Button, sobald der Browser ihn anbietet
+let installEvent = null;
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvent = e; $('#install').hidden = false; });
+window.addEventListener('appinstalled', () => { installEvent = null; $('#install').hidden = true; melde('Installiert – das Dashboard gibt es jetzt als App.'); });
+$('#install').addEventListener('click', async () => {
+  if (!installEvent) return;
+  installEvent.prompt();
+  try { await installEvent.userChoice; } catch (e) { /* abgebrochen */ }
+  installEvent = null;
+  $('#install').hidden = true;
+});
 
 window.addEventListener('storage', (e) => {
   if (e.key !== null && !txt(e.key).startsWith(P)) return;
   ladeZustand();
+  ladeTimer();
+  wendeDesignAn();
+  renderFokus();
   syncFormulare();
   aktualisiere();
 });
@@ -1074,15 +1952,13 @@ const ladeTag = heute();
 function pruefeTageswechsel() {
   if (heute() === ladeTag) return;
   const tippt = document.activeElement && /^(TEXTAREA|INPUT|SELECT)$/.test(document.activeElement.tagName);
-  if (store.ok && !tippt && !document.querySelector('dialog[open]')) location.reload();
+  if (store.ok && !tippt && !fokus.zustand && !document.querySelector('dialog[open]')) location.reload();
   else aktualisiere();
 }
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { pruefeTageswechsel(); pruefeNeueDaten(); } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { fokusTick(); pruefeTageswechsel(); pruefeNeueDaten(); } });
 setInterval(() => { if (!document.hidden) { pruefeTageswechsel(); pruefeNeueDaten(); } }, 5 * 60 * 1000);
 
 /* ---------- App (iPhone-Home-Bildschirm) ---------- */
-const imNetz = /^https?:$/.test(location.protocol);
-const istApp = document.documentElement.classList.contains('app');
 if (imNetz && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 if (istApp && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});   // iOS soll den Speicher nicht aufräumen
 
